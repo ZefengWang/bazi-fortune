@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3d9a4"/>
+      <stop offset="0.5" stop-color="#e8c37a"/>
+      <stop offset="1" stop-color="#c9a45c"/>
+    </linearGradient>
+    <linearGradient id="goldGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7e3b3"/>
+      <stop offset="1" stop-color="#d9b268"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12172b"/>
+      <stop offset="1" stop-color="#0b0e1a"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#2a3352"/>
+      <stop offset="1" stop-color="#0b0e1a"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 背景圆 -->
+  <circle cx="200" cy="200" r="196" fill="url(#bgGrad)"/>
+  <circle cx="200" cy="200" r="196" fill="url(#halo)"/>
+
+  <!-- 外圈金色双环 -->
+  <circle cx="200" cy="200" r="190" fill="none" stroke="url(#goldGrad)" stroke-width="3"/>
+  <circle cx="200" cy="200" r="182" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.55"/>
+
+  <!-- 顶部五行星点（金木水火土） -->
+  <g fill="url(#goldGrad2)">
+    <circle cx="200" cy="40" r="4"/>
+    <circle cx="160" cy="46" r="2.6"/>
+    <circle cx="240" cy="46" r="2.6"/>
+    <circle cx="128" cy="60" r="2"/>
+    <circle cx="272" cy="60" r="2"/>
+  </g>
+
+  <!-- 太极底盘（浅金圆盘，让黑白太极清晰呈现） -->
+  <circle cx="200" cy="200" r="80" fill="url(#goldGrad2)"/>
+  <circle cx="200" cy="200" r="80" fill="none" stroke="#c9a45c" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- 标准太极（黑白阴阳鱼，严格按传统图式）
+       几何：大圆半径68，S形分界线由两个半径34的半圆构成
+       - 上半段（顶部→圆心）向右凸，下半段（圆心→底部）向左凸，构成标准S形
+       - 阳鱼（白）居左、阴鱼（黑）居右，两鱼共享同一条S形分界线
+       - 鱼眼位于上下两个半圆的圆心 (0,-34)/(0,34)，半径取大圆的1/8 -->
+  <g transform="translate(200,200)">
+    <!-- 阳鱼（白，左）：大圆左弧 + S分界（下半向右凸 + 上半向左凸） -->
+    <path d="M0,-68 A68,68 0 0 0 0,68 A34,34 0 0 1 0,0 A34,34 0 0 0 0,-68 Z" fill="#ffffff"/>
+    <!-- 阴鱼（黑，右）：大圆右弧 + 同一条S分界 -->
+    <path d="M0,-68 A68,68 0 0 1 0,68 A34,34 0 0 1 0,0 A34,34 0 0 0 0,-68 Z" fill="#000000"/>
+    <!-- 阳鱼眼（黑点，顶部） -->
+    <circle cx="0" cy="-34" r="8.5" fill="#000000"/>
+    <!-- 阴鱼眼（白点，底部） -->
+    <circle cx="0" cy="34" r="8.5" fill="#ffffff"/>
+  </g>
+
+  <!-- 四柱干支徽章（年/月/日/时，内部含角标） -->
+  <g font-family="'Noto Serif CJK SC','Songti SC','STSong',serif" text-anchor="middle">
+    <!-- 年柱（上） -->
+    <g transform="translate(200,88)">
+      <rect x="-26" y="-33" width="52" height="66" rx="10" fill="rgba(232,195,122,0.08)" stroke="url(#goldGrad)" stroke-width="1.2"/>
+      <text y="-12" font-size="20" fill="url(#goldGrad2)" font-weight="700">庚</text>
+      <text y="12" font-size="16" fill="#e8c37a">午</text>
+      <text y="26" font-size="10" fill="#aab0c4" font-family="'Noto Sans CJK SC','PingFang SC',sans-serif">年柱</text>
+    </g>
+    <!-- 月柱（右） -->
+    <g transform="translate(312,200)">
+      <rect x="-26" y="-33" width="52" height="66" rx="10" fill="rgba(232,195,122,0.08)" stroke="url(#goldGrad)" stroke-width="1.2"/>
+      <text y="-12" font-size="20" fill="url(#goldGrad2)" font-weight="700">辛</text>
+      <text y="12" font-size="16" fill="#e8c37a">巳</text>
+      <text y="26" font-size="10" fill="#aab0c4" font-family="'Noto Sans CJK SC','PingFang SC',sans-serif">月柱</text>
+    </g>
+    <!-- 日柱（下） -->
+    <g transform="translate(200,312)">
+      <rect x="-26" y="-33" width="52" height="66" rx="10" fill="rgba(232,195,122,0.08)" stroke="url(#goldGrad)" stroke-width="1.2"/>
+      <text y="-12" font-size="20" fill="url(#goldGrad2)" font-weight="700">乙</text>
+      <text y="12" font-size="16" fill="#e8c37a">酉</text>
+      <text y="26" font-size="10" fill="#aab0c4" font-family="'Noto Sans CJK SC','PingFang SC',sans-serif">日柱</text>
+    </g>
+    <!-- 时柱（左） -->
+    <g transform="translate(88,200)">
+      <rect x="-26" y="-33" width="52" height="66" rx="10" fill="rgba(232,195,122,0.08)" stroke="url(#goldGrad)" stroke-width="1.2"/>
+      <text y="-12" font-size="20" fill="url(#goldGrad2)" font-weight="700">丙</text>
+      <text y="12" font-size="16" fill="#e8c37a">申</text>
+      <text y="26" font-size="10" fill="#aab0c4" font-family="'Noto Sans CJK SC','PingFang SC',sans-serif">时柱</text>
+    </g>
+  </g>
+
+  <!-- 底部弧形文字：八字命理排盘 -->
+  <g font-family="'Noto Serif CJK SC','Songti SC','STSong',serif" font-size="20" font-weight="700" fill="url(#goldGrad2)" letter-spacing="6">
+    <path id="arc" d="M 68,232 A 132,132 0 0 0 332,232" fill="none"/>
+    <text>
+      <textPath href="#arc" startOffset="50%" text-anchor="middle">八字命理排盘</textPath>
+    </text>
+  </g>
+</svg>
