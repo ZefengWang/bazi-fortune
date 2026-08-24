@@ -145,6 +145,7 @@
   .dayun-item .age { font-size: 12px; color: var(--muted); }
   .dayun-item .gz { font-size: 18px; font-weight: 700; color: var(--gold-2); margin: 4px 0; }
   .dayun-item .ss { font-size: 12px; color: var(--gold); }
+  .dayun-item .brief { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; text-align: left; border-top: 1px dashed rgba(255,255,255,0.10); padding-top: 6px; }
   .liunian-form { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 14px; margin-bottom: 10px; }
   .liunian-form input { width: 110px; background: rgba(0,0,0,0.30); border: 1px solid var(--panel-border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 15px; outline: none; }
   .liunian-form input:focus { border-color: var(--gold); }
@@ -152,6 +153,7 @@
   #liunian-result { margin-top: 6px; }
   .liunian-card { background: rgba(0,0,0,0.22); border: 1px solid rgba(232,195,122,0.25); border-radius: 10px; padding: 14px 16px; font-size: 14.5px; color: var(--text); }
   .liunian-card .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; }
+  .liunian-card .v { margin-top: 6px; }
 
   footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
   footer .warn { color: #f0b8b1; font-weight: 600; margin-top: 6px; }
@@ -183,6 +185,8 @@
     .result-head .pillars .tg { font-size: 22px; }
     .result-head .pillars .dz { font-size: 15px; }
     .result-head .pillars .col-label { font-size: 10px; }
+    /* 超窄屏大运卡片改单列，避免解说文字过挤 */
+    .dayun-table { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -305,6 +309,10 @@
     </div>
 
     <div class="section" id="details"></div>
+
+    <div class="section" id="pillars-detail"></div>
+
+    <div class="section" id="shishen-detail"></div>
 
     <div class="section">
       <h3>大运排盘</h3>
@@ -455,12 +463,16 @@ function buildDayunHtml(result, report) {
   const dy = ENGINE.computeDayunAndLiuNian(result, report, gender);
   const dirTxt = dy.forward ? "顺排" : "逆排";
   const qy = `起运：约 <b>${dy.qi_yun_age.toFixed(1)} 岁</b>（${dirTxt}）　大运以约 ${dy.qi_yun_date || "--"} 起换运`;
-  const items = dy.dayun.map(d =>
-    `<div class="dayun-item">
+  const items = dy.dayun.map(d => {
+    const sd = ENGINE.SHISHEN_DETAILS[d.shishen];
+    const brief = sd ? sd["含义"] : "";
+    return `<div class="dayun-item">
        <div class="age">${d.from} ~ ${d.to} 岁</div>
        <div class="gz">${d.gan}${d.zhi}</div>
        <div class="ss">${d.shishen}</div>
-     </div>`).join("");
+       <div class="brief">${brief}</div>
+     </div>`;
+  }).join("");
   $("qi-yun").innerHTML = qy;
   $("dayun-table").innerHTML = items;
 }
@@ -472,9 +484,14 @@ function buildLiuNianHtml(result, report, year) {
   // 日主所在年岁
   const bzAge = Math.max(0, l.bz - (result.bz_year || result.original_year));
   const wxGan = ENGINE.WU_XING[l.gan], wxZhi = ENGINE.WU_XING[l.zhi];
+  const dGan = ENGINE.SHISHEN_DETAILS[ssGan], dZhi = ENGINE.SHISHEN_DETAILS[ssZhi];
+  const yong = report.yong_shen || "";
   return `<div class="liunian-card">
     <div class="k">${l.year} 年（${l.gan}${l.zhi}）· 岁数约 ${bzAge}　天干【${l.gan}·${ENGINE.YIN_YANG[l.gan]}${wxGan}】/${ssGan}　地支【${l.zhi}·${ENGINE.YIN_YANG[l.zhi]}${wxZhi}】/${ssZhi}</div>
-    <div class="v">流年以立春换年。天干代表当年的主要趋势、外在显性力量；地支代表该年隐藏的资源、环境与根基。以${l.gan}${l.zhi}所对应十神（${ssGan}/${ssZhi}）对比《格局详解》中的喜用方向，五行生克趋吉则可大胆作为，冲克泄耗则宜稳中求进。</div>
+    <div class="v">流年以立春换年。天干代表当年的主要趋势、外在显性力量；地支代表该年隐藏的资源、环境与根基。</div>
+    <div class="v"><b>天干 ${l.gan}（${ssGan}）</b>：${dGan ? dGan["含义"] : ""}</div>
+    <div class="v"><b>地支 ${l.zhi}（${ssZhi}）</b>：${dZhi ? dZhi["含义"] : ""}</div>
+    <div class="v"><b>行动建议</b>：以${l.gan}${l.zhi}所对应十神（${ssGan}/${ssZhi}）对比喜用方向【${yong}】，五行生克趋吉则可大胆作为，冲克泄耗则宜稳中求进。</div>
   </div>`;
 }
 
@@ -536,6 +553,33 @@ function renderResult(result, report, loc) {
      <div class="detail-block"><div class="k">2 · 性格双重拆解</div><div class="v">${d["性格双重拆解"]}</div></div>
      <div class="detail-block"><div class="k">3 · 事业天花板方向</div><div class="v">${d["事业天花板"]}</div></div>
      <div class="detail-block"><div class="k">4 · 核心解局思路</div><div class="v">${d["核心用神解法"]}</div></div>`;
+
+  // 四柱逐柱解读
+  const pd = report.pillars_detail;
+  $("pillars-detail").innerHTML =
+    `<h3>四柱逐柱解读</h3>` +
+    ["年柱","月柱","日柱","时柱"].map(k =>
+      `<div class="detail-block">
+         <div class="k">${k} · ${pd[k]["干支"]} · ${pd[k]["十神"]}　<span style="color:var(--muted);font-weight:400">${pd[k]["宫位"]}</span></div>
+         <div class="v">${pd[k]["说明"]}</div>
+       </div>`
+    ).join("");
+
+  // 十神详解（命盘出现的十神，去重）
+  const ssSet = [];
+  [report.shishen["年干"], report.shishen["月干"], report.shishen["时干"], report.shishen["月令"]].forEach(s => {
+    if (s && !ssSet.includes(s)) ssSet.push(s);
+  });
+  $("shishen-detail").innerHTML =
+    `<h3>十神详解</h3>` +
+    ssSet.map(s => {
+      const sd = ENGINE.SHISHEN_DETAILS[s];
+      if (!sd) return "";
+      return `<div class="detail-block">
+        <div class="k">${s}</div>
+        <div class="v"><b>含义</b>：${sd["含义"]}<br><b>性格</b>：${sd["性格"]}<br><b>事业</b>：${sd["事业"]}<br><b>喜忌</b>：${sd["喜忌"]}</div>
+      </div>`;
+    }).join("");
 
   // 大运 + 流年（默认流年预填出生当年）
   buildDayunHtml(result, report);

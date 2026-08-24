@@ -354,6 +354,78 @@ const FALLBACK_DETAIL = {
   "核心用神解法":"此格不求单点突破，最喜大运走【五行流通】之运，能量不断流则一生安稳，富贵自来。"
 };
 
+/* 十神详解（相对日主）—— 用于命盘十神逐项解读 */
+const SHISHEN_DETAILS = {
+  "比肩": {
+    "含义":"与日主同五行、同阴阳的同类力量，代表兄弟、朋友、同事、竞争者，也代表自我意志与独立人格。",
+    "性格":"自尊心强、独立自主、讲义气、重朋友，凡事习惯亲力亲为；但易固执己见、不喜受人管束，竞争意识强烈。",
+    "事业":"适合独立创业、技术攻坚、竞技体育、销售等需要个人硬实力的领域；忌与人合伙分利，易因争夺而破财。",
+    "喜忌":"身强比肩多者，宜以官杀制之、食伤泄之；身弱则喜比肩帮扶，得朋友兄弟之力。"
+  },
+  "劫财": {
+    "含义":"与日主同五行、异阴阳的力量，代表异姓兄弟姐妹、同事伙伴，也象征破财、争夺与竞争。",
+    "性格":"豪爽大方、行动力强、敢于冒险，善于借势；但易冲动消费、好面子、与人争利，钱财难聚。",
+    "事业":"适合开拓型、竞争型行业，能快速抢占市场；但需防合伙纠纷、小人夺财，宜建立清晰的分利机制。",
+    "喜忌":"劫财旺者最忌身强无制，财来财去；宜配官杀护财、食伤生财，方能聚财守成。"
+  },
+  "正印": {
+    "含义":"生我者、异性，代表母亲、长辈、贵人、学业、名誉与庇护，是命中最温柔的守护力量。",
+    "性格":"心地善良、包容宽厚、求知欲强、重视名誉，天然得长辈提携；但易依赖他人、行动力偏弱、思虑过多。",
+    "事业":"适合教育、科研、文化、医疗、公益等依靠声誉与专业壁垒的领域，走稳健持久路线。",
+    "喜忌":"印星过重则懒散空想，宜以财星适度制印、以食伤泄秀；印星为用则利学业功名，多得贵人。"
+  },
+  "偏印": {
+    "含义":"生我者、同性，代表继母、偏门学问、宗教玄学、特异直觉与孤独深邃的能量。",
+    "性格":"直觉敏锐、思维独特、多才多艺，能洞察事物本质；但性格孤僻、多疑敏感、易钻牛角尖。",
+    "事业":"适合研发、心理学、玄学、尖端科技、特立独行的艺术创作等冷门蓝海领域，易成宗师。",
+    "喜忌":"偏印最忌夺食（枭神夺食），需以偏财制之、以食神通关；偏印为用则智慧超群，利偏门成就。"
+  },
+  "食神": {
+    "含义":"我生者、同性，代表才华的自然流露、口福、子女与福气，是命中的'福寿星'。",
+    "性格":"心态宽和、才华内敛、热爱生活、注重审美与精神自由；但易随性安逸、缺乏危机感。",
+    "事业":"适合产品设计、文创、美学、咨询、美食等靠才华与品味变现的领域，福气自来。",
+    "喜忌":"食神最喜生财，才华可源源变现；最忌偏印克制（枭神夺食），才华受阻、福气受损。"
+  },
+  "伤官": {
+    "含义":"我生者、异性，代表才华的爆发式输出、口才、叛逆与创新，是最狂暴的创造力。",
+    "性格":"才华横溢、口才极佳、领悟力惊人、极具个人魅力；但恃才傲物、说话扎人、不服管束、易惹是非。",
+    "事业":"适合演艺、自媒体、颠覆性科技、投资等需要创新与表达的领域，易一战成名。",
+    "喜忌":"伤官必须驯服：配正印成'伤官配印'以理智约束才华，或配财星'伤官生财'将才华变现；忌伤官见官。"
+  },
+  "正官": {
+    "含义":"克我者、异性，代表官职、名誉、纪律与正统约束，是天地正气。",
+    "性格":"光明磊落、自律性强、责任感重、重名誉讲规矩；但易保守传统、过度在意他人评价。",
+    "事业":"适合公职、大型企业高管、法务合规等体制内路线，能在规则框架内做到高层。",
+    "喜忌":"官星喜印相生（官印相生）则权柄稳固；最忌伤官克官（伤官见官），仕途多波折。"
+  },
+  "七杀": {
+    "含义":"克我者、同性，代表权力、压力、竞争与变革，是一把双刃剑。",
+    "性格":"杀伐果断、魄力十足、危机处理能力强、有逆境翻盘的狼性；但疑心重、攻击性强、易长期紧绷。",
+    "事业":"适合竞争激烈行业的破局者、军警、高风险领域总指挥，常在危机中一战成名。",
+    "喜忌":"七杀必须有制化：食神制杀（正面硬撼）或正印化杀（杀印相生），方能化压力为权柄。"
+  },
+  "正财": {
+    "含义":"我克者、异性，代表正当财富、稳定收入、妻子（男命）与务实经营。",
+    "性格":"务实稳重、精打细算、重视积累、风险意识强；但易过于计较、缺乏冒险精神。",
+    "事业":"适合金融、实业、供应链、财务统筹等稳健领域，走踏实积累路线。",
+    "喜忌":"身强财旺则富贵可期；身弱财多则担财吃力，宜配印比生扶，方能担财守财。"
+  },
+  "偏财": {
+    "含义":"我克者、同性，代表意外之财、流动之财、父亲、投机与人脉资源。",
+    "性格":"豪爽侠义、商业嗅觉敏锐、擅长资源整合与人际博弈；但投机心重、耐性不足、易大起大落。",
+    "事业":"适合创业、投资、商务开拓等杠杆型领域，财富天花板取决于资源整合能力。",
+    "喜忌":"偏财最怕比劫夺财，宜配官杀护财或食伤通关；偏财为用则财源广进，利横财。"
+  }
+};
+
+/* 四柱宫位详解 */
+const PILLAR_MEANING = {
+  "年柱":{"宫位":"祖上 · 父母 · 早年（约 1-16 岁）","说明":"代表祖荫、原生家庭与早年根基。年干为父辈影响，年支为祖辈环境，也反映少年时期的成长底色。"},
+  "月柱":{"宫位":"父母 · 兄弟 · 青年（约 17-32 岁）","说明":"代表父母兄弟与青年运势。月令为格局核心，是命局力量最旺之处，决定一生大方向与事业起点。"},
+  "日柱":{"宫位":"自身 · 婚姻 · 中年（约 33-48 岁）","说明":"日干为日主自身，代表本人核心；日支为婚姻宫，代表配偶与婚姻状态，也主中年运势。"},
+  "时柱":{"宫位":"子女 · 晚年（约 49 岁后）","说明":"代表子女、下属与晚年归宿。时支为子女宫，反映晚景与人生收尾的格局。"}
+};
+
 /* ---------------- 5. 十神 ---------------- */
 function get_shishen_relation(me, other) {
   const me_x = WU_XING[me], me_y = YIN_YANG[me];
@@ -658,11 +730,19 @@ function generate_report(result) {
   const detail = PATTERN_DETAILS[month_relation] || FALLBACK_DETAIL;
   const parent_element = parentElementOf(me_x);
 
+  // 四柱逐柱解读（宫位 + 干支 + 十神）
+  const pillars_detail = {
+    "年柱": { "干支": year_tg + year_dz, "十神": get_shishen_relation(ri_zhu, year_tg), "宫位": PILLAR_MEANING["年柱"]["宫位"], "说明": PILLAR_MEANING["年柱"]["说明"] },
+    "月柱": { "干支": month_tg + month_dz, "十神": month_relation, "宫位": PILLAR_MEANING["月柱"]["宫位"], "说明": PILLAR_MEANING["月柱"]["说明"] },
+    "日柱": { "干支": ri_zhu + day_dz, "十神": "日主（自身）", "宫位": PILLAR_MEANING["日柱"]["宫位"], "说明": PILLAR_MEANING["日柱"]["说明"] },
+    "时柱": { "干支": hour_tg + hour_dz, "十神": get_shishen_relation(ri_zhu, hour_tg), "宫位": PILLAR_MEANING["时柱"]["宫位"], "说明": PILLAR_MEANING["时柱"]["说明"] }
+  };
+
   return {
     me_x, month_relation, elements_count, elements_power: strength.power,
     parent_element, strength, hidden_stems, shishen,
     power_status: strength.label, yong_shen: strength.yong,
-    detail
+    detail, pillars_detail
   };
 }
 
@@ -674,7 +754,8 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
-    execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL
+    execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
+    SHISHEN_DETAILS, PILLAR_MEANING
   };
 } else {
   window.BaziEngine = {
@@ -683,6 +764,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
-    execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL
+    execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
+    SHISHEN_DETAILS, PILLAR_MEANING
   };
 }
