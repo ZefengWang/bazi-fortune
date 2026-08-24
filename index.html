@@ -72,7 +72,7 @@
   .field label { font-size: 13px; color: var(--muted); }
   .field input, .field select {
     background: rgba(0,0,0,0.30); border: 1px solid var(--panel-border); border-radius: 8px;
-    color: var(--text); padding: 10px 12px; font-size: 15px; font-family: inherit; outline: none;
+    color: var(--text); padding: 10px 12px; font-size: 16px; font-family: inherit; outline: none;
     transition: border-color .2s, box-shadow .2s;
   }
   .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,195,122,0.15); }
@@ -125,11 +125,36 @@
   footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
   footer .warn { color: #f0b8b1; font-weight: 600; margin-top: 6px; }
 
+  /* 平板 */
+  @media (max-width: 768px) {
+    .wrap { padding: 20px 12px 48px; }
+    .card { padding: 20px 16px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* 手机 */
   @media (max-width: 600px) {
-    header h1 { font-size: 24px; }
+    header h1 { font-size: 23px; letter-spacing: 1px; }
+    header .subtitle { font-size: 12.5px; }
+    .disclaimer { flex-direction: column; padding: 14px 16px; gap: 8px; }
+    .disclaimer .body { font-size: 13px; }
+    .card { padding: 18px 14px; border-radius: 12px; }
+    .grid { grid-template-columns: 1fr; }
+    .field.full { grid-column: 1; }
+    .radio-group { flex-direction: column; gap: 10px; }
+    .result-head .pillars .pillar { margin: 0 5px; }
     .result-head .pillars .tg { font-size: 26px; }
-    .result-head .pillars .dz { font-size: 18px; }
-    .disclaimer { flex-direction: column; }
+    .result-head .pillars .dz { font-size: 17px; }
+    .detail-block { padding: 14px; }
+    .detail-block .v { font-size: 14px; }
+  }
+
+  /* 小屏手机 */
+  @media (max-width: 380px) {
+    .result-head .pillars .pillar { margin: 0 3px; }
+    .result-head .pillars .tg { font-size: 22px; }
+    .result-head .pillars .dz { font-size: 15px; }
+    .result-head .pillars .col-label { font-size: 10px; }
   }
 </style>
 </head>
