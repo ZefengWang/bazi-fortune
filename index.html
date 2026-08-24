@@ -73,13 +73,20 @@
   .field input, .field select {
     background: rgba(0,0,0,0.30); border: 1px solid var(--panel-border); border-radius: 8px;
     color: var(--text); padding: 10px 12px; font-size: 16px; font-family: inherit; outline: none;
-    transition: border-color .2s, box-shadow .2s;
+    transition: border-color .2s, box-shadow .2s; width: 100%;
   }
   .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,195,122,0.15); }
   .field .hint { font-size: 12px; color: var(--muted); }
   .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
   .radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text); }
   .radio-group input { accent-color: var(--gold); }
+
+  .location-info {
+    margin-top: 14px; padding: 12px 16px; border-radius: 10px;
+    background: rgba(232,195,122,0.07); border: 1px solid rgba(232,195,122,0.25);
+    color: var(--gold-2); font-size: 14px; display: none;
+  }
+  .location-info b { color: var(--gold); }
 
   button#submit {
     margin-top: 20px; width: 100%; padding: 14px; font-size: 16px; font-weight: 700; letter-spacing: 2px;
@@ -118,6 +125,10 @@
   .bar-track { flex: 1; height: 14px; background: rgba(0,0,0,0.35); border-radius: 7px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 7px; transition: width .6s ease; }
 
+  .hidden-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+  .hidden-table th, .hidden-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--panel-border); }
+  .hidden-table th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+
   .detail-block { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 12px; padding: 18px; margin-top: 12px; }
   .detail-block .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; font-size: 14px; }
   .detail-block .v { color: var(--text); font-size: 14.5px; }
@@ -125,14 +136,11 @@
   footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
   footer .warn { color: #f0b8b1; font-weight: 600; margin-top: 6px; }
 
-  /* 平板 */
   @media (max-width: 768px) {
     .wrap { padding: 20px 12px 48px; }
     .card { padding: 20px 16px; }
     .grid { grid-template-columns: repeat(2, 1fr); }
   }
-
-  /* 手机 */
   @media (max-width: 600px) {
     header h1 { font-size: 23px; letter-spacing: 1px; }
     header .subtitle { font-size: 12.5px; }
@@ -148,8 +156,6 @@
     .detail-block { padding: 14px; }
     .detail-block .v { font-size: 14px; }
   }
-
-  /* 小屏手机 */
   @media (max-width: 380px) {
     .result-head .pillars .pillar { margin: 0 3px; }
     .result-head .pillars .tg { font-size: 22px; }
@@ -202,56 +208,40 @@
         <label for="minute">出生分钟</label>
         <input type="number" id="minute" placeholder="0-59" min="0" max="59" value="0">
       </div>
-      <div class="field">
-        <label for="province">出生地（省/市/自治区）</label>
-        <select id="province">
-          <option value="北京市">北京市</option>
-          <option value="上海市">上海市</option>
-          <option value="天津市">天津市</option>
-          <option value="重庆市">重庆市</option>
-          <option value="河北省">河北省</option>
-          <option value="山西省">山西省</option>
-          <option value="辽宁省">辽宁省</option>
-          <option value="吉林省">吉林省</option>
-          <option value="黑龙江省">黑龙江省</option>
-          <option value="江苏省">江苏省</option>
-          <option value="浙江省">浙江省</option>
-          <option value="安徽省">安徽省</option>
-          <option value="福建省">福建省</option>
-          <option value="江西省">江西省</option>
-          <option value="山东省">山东省</option>
-          <option value="河南省">河南省</option>
-          <option value="湖北省">湖北省</option>
-          <option value="湖南省">湖南省</option>
-          <option value="广东省">广东省</option>
-          <option value="海南省">海南省</option>
-          <option value="四川省">四川省</option>
-          <option value="贵州省">贵州省</option>
-          <option value="云南省">云南省</option>
-          <option value="陕西省">陕西省</option>
-          <option value="甘肃省">甘肃省</option>
-          <option value="青海省">青海省</option>
-          <option value="台湾省">台湾省</option>
-          <option value="内蒙古自治区">内蒙古自治区</option>
-          <option value="广西壮族自治区">广西壮族自治区</option>
-          <option value="西藏自治区">西藏自治区</option>
-          <option value="宁夏回族自治区">宁夏回族自治区</option>
-          <option value="新疆维吾尔自治区">新疆维吾尔自治区</option>
-          <option value="__custom__">海外 / 自定义经度</option>
-        </select>
+
+      <div class="field full">
+        <label for="country">出生国家 / 地区</label>
+        <select id="country"></select>
       </div>
-      <div class="field" id="lng-field" style="display:none;">
-        <label for="longitude">精确经度（东经正 / 西经负）</label>
-        <input type="number" id="longitude" step="any" placeholder="如 35.2 或 -74.0" value="35.2">
+      <div class="field" id="province-field">
+        <label for="province">省份 / 直辖市</label>
+        <select id="province"></select>
       </div>
+      <div class="field" id="city-field">
+        <label for="city">城市</label>
+        <select id="city"></select>
+      </div>
+      <div class="field" id="custom-tz-field" style="display:none;">
+        <label for="custom-tz">IANA 时区</label>
+        <input type="text" id="custom-tz" placeholder="如 America/New_York" value="Asia/Shanghai">
+        <span class="hint">填 IANA 时区标识，浏览器自动处理夏令时</span>
+      </div>
+      <div class="field" id="custom-lng-field" style="display:none;">
+        <label for="custom-lng">精确经度（东正西负）</label>
+        <input type="number" id="custom-lng" step="any" placeholder="如 116.4 或 -74.0" value="116.4">
+      </div>
+
       <div class="field full">
         <label>时间类型</label>
         <div class="radio-group">
-          <label><input type="radio" name="time_type" value="1" checked> 现代行政时间（自动真太阳时纠偏）</label>
-          <label><input type="radio" name="time_type" value="2"> 古代视太阳时（真实太阳高度角）</label>
+          <label><input type="radio" name="time_type" value="1" checked> 现代行政时间（自动转真太阳时，含时区/夏令时）</label>
+          <label><input type="radio" name="time_type" value="2"> 古代视太阳时（输入已按日晷校准，不再纠偏）</label>
         </div>
       </div>
     </div>
+
+    <div class="location-info" id="location-info"></div>
+
     <button id="submit">开始排盘测算</button>
     <div class="error-msg" id="error"></div>
   </div>
@@ -265,35 +255,134 @@
     </div>
 
     <div class="section">
-      <h3>五行能量状态</h3>
+      <h3>五行能量状态（加权）</h3>
       <div class="chips" id="status-chip"></div>
       <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="section">
+      <h3>地支藏干</h3>
+      <table class="hidden-table" id="hidden-table"></table>
     </div>
 
     <div class="section" id="details"></div>
   </div>
 
   <footer>
-    <div>本页面由 Python 命理引擎逐行移植为前端 JavaScript 实现，逻辑保持一致。</div>
+    <div>本页面由 Python 命理引擎逐行移植为前端 JavaScript 实现，并升级为「节气定月 / 时区换算 / 藏干身强弱」高精度版本。</div>
     <div class="warn">⚠️ 仅供学习研究使用 · 禁止任何商业用途 · 结果不构成任何建议</div>
   </footer>
 </div>
 
+<script src="cities-data.js"></script>
 <script src="engine.js"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
+const CITY_DB = window.CITY_DB;
 const $ = (id) => document.getElementById(id);
 const WX_HEX = { "木":"#6dbd6d", "火":"#e0655a", "土":"#d9a95c", "金":"#d8d3c4", "水":"#5a9bd9" };
+const ELEM_CLASS = { "木":"mu", "火":"huo", "土":"tu", "金":"jin", "水":"shui" };
 
 function showError(msg) { const el = $("error"); el.textContent = msg; el.style.display = "block"; }
 function clearError() { $("error").style.display = "none"; }
 
-function renderResult(result, report) {
+/* ---------- 三级联动：国家 → 省 → 城市 ---------- */
+function initLocations() {
+  const countrySel = $("country");
+  const add = (val, txt) => { const o = document.createElement("option"); o.value = val; o.textContent = txt; countrySel.appendChild(o); };
+  add("china", "中国 🇨🇳（默认北京时间）");
+  CITY_DB.global.forEach(c => add(c.name, c.name));
+  add("__custom__", "其他 / 自定义时区与经度");
+  onCountryChange();
+}
+
+function fillSelect(sel, items, labelFn) {
+  sel.innerHTML = "";
+  items.forEach((it, i) => {
+    const o = document.createElement("option");
+    o.value = it.name; o.textContent = labelFn(it, i);
+    sel.appendChild(o);
+  });
+}
+
+function renderProvinces() {
+  fillSelect($("province"), CITY_DB.china.provinces, (p) => p.name);
+  onChange();
+}
+function renderCountryCities(countryName) {
+  const c = CITY_DB.global.find(x => x.name === countryName);
+  fillSelect($("city"), c.cities, (ci) => `${ci.name} (${ci.tz})`);
+  onChange();
+}
+function renderChinaCities() {
+  const p = CITY_DB.china.provinces.find(x => x.name === $("province").value);
+  fillSelect($("city"), p.cities, (ci) => ci.name);
+  onChange();
+}
+
+function onCountryChange() {
+  const v = $("country").value;
+  const provField = $("province-field"), cityField = $("city-field");
+  const tzField = $("custom-tz-field"), lngField = $("custom-lng-field");
+
+  if (v === "china") {
+    provField.style.display = "flex"; cityField.style.display = "flex";
+    tzField.style.display = "none"; lngField.style.display = "none";
+    renderProvinces();
+  } else if (v === "__custom__") {
+    provField.style.display = "none"; cityField.style.display = "none";
+    tzField.style.display = "flex"; lngField.style.display = "flex";
+    onChange();
+  } else {
+    provField.style.display = "none"; cityField.style.display = "flex";
+    tzField.style.display = "none"; lngField.style.display = "none";
+    renderCountryCities(v);
+  }
+}
+
+/* 解析当前位置与经度/时区 */
+function resolveLocation() {
+  const v = $("country").value;
+  if (v === "__custom__") {
+    const tz = ($("custom-tz").value || "").trim() || "Asia/Shanghai";
+    const lng = parseFloat($("custom-lng").value);
+    if (isNaN(lng) || lng < -180 || lng > 180) return { error: "❌ 经度超出物理边界 (-180 ~ 180)。" };
+    return { lng, tz, label: `自定义 · 时区 ${tz}`, cityName: "自定义" };
+  }
+  let city;
+  if (v === "china") {
+    const p = CITY_DB.china.provinces.find(x => x.name === $("province").value);
+    city = p.cities.find(c => c.name === $("city").value);
+    return { lng: city.lng, tz: "Asia/Shanghai", label: `中国 · ${city.name}`, cityName: city.name };
+  }
+  const c = CITY_DB.global.find(x => x.name === v);
+  city = c.cities.find(x => x.name === $("city").value);
+  return { lng: city.lng, tz: city.tz, label: `${v} · ${city.name}`, cityName: city.name };
+}
+
+function onChange() {
+  const loc = resolveLocation();
+  const info = $("location-info");
+  if (loc.error) { info.style.display = "none"; return; }
+  const lngTxt = `${Math.abs(loc.lng).toFixed(2)}°${loc.lng >= 0 ? "E" : "W"}`;
+  info.style.display = "block";
+  info.innerHTML = `<b>${loc.label}</b>　经度 <b>${lngTxt}</b>（自动查得）　时区 <b>${loc.tz}</b>（浏览器自动处理夏令时）`;
+}
+
+$("country").addEventListener("change", onCountryChange);
+$("province").addEventListener("change", renderChinaCities);
+$("city").addEventListener("change", onChange);
+$("custom-tz").addEventListener("input", onChange);
+$("custom-lng").addEventListener("input", onChange);
+
+/* ---------- 结果渲染 ---------- */
+function renderResult(result, report, loc) {
   $("result").style.display = "block";
   const ydisp = result.original_year < 0 ? `公元前 ${Math.abs(result.original_year)}` : `公元 ${result.original_year}`;
+  const lngTxt = `${Math.abs(result.longitude).toFixed(2)}°${result.longitude >= 0 ? "E" : "W"}`;
   $("result-meta").textContent =
-    `${ydisp} | 经度 ${result.longitude}°E | 真太阳时 ${result.t_year}年${result.t_month}月${result.t_day}日 ${String(result.t_hour).padStart(2,"0")}:${String(result.t_min).padStart(2,"0")} (JD ${result.jd.toFixed(5)})`;
+    `${ydisp} | ${loc.label} | 经度 ${lngTxt} | 真太阳时 ${result.t_year}年${result.t_month}月${result.t_day}日 ${String(result.t_hour).padStart(2,"0")}:${String(result.t_min).padStart(2,"0")}`;
 
   const col = (tg, dz, label) =>
     `<span class="pillar"><span class="tg">${tg}</span><span class="dz">${dz}</span><span class="col-label">${label}</span></span>`;
@@ -304,21 +393,32 @@ function renderResult(result, report) {
     + col(result.hour_tg, result.hour_dz, "时柱");
 
   $("master").innerHTML =
-    `核心日主：<strong>【${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]} · ${ENGINE.YIN_YANG[result.ri_zhu]}】</strong>`;
+    `核心日主：<strong>【${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]} · ${ENGINE.YIN_YANG[result.ri_zhu]}】</strong>　喜用神方向：<strong>${report.yong_shen}</strong>`;
 
   $("status-chip").innerHTML = `<span class="chip status">${report.power_status}</span>`;
 
+  // 五行加权条形图
   const order = ["木","火","土","金","水"];
+  const maxP = Math.max(...order.map(wx => report.elements_power[wx]), 1);
   $("bars").innerHTML = order.map(wx => {
-    const n = report.elements_count[wx];
-    const pct = Math.round(n / 8 * 100);
+    const v = report.elements_power[wx];
+    const pct = Math.round(v / maxP * 100);
     return `<div class="bar-row">
       <span class="bar-label" style="color:${WX_HEX[wx]}">${wx}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${WX_HEX[wx]}"></div></div>
-      <span style="width:24px;font-size:13px;color:var(--muted)">${n}</span>
+      <span style="width:40px;font-size:13px;color:var(--muted)">${Math.round(v)}</span>
     </div>`;
   }).join("");
 
+  // 地支藏干表
+  const hs = report.hidden_stems;
+  const hsCols = ["年", "月", "日", "时"];
+  $("hidden-table").innerHTML =
+    `<tr>${hsCols.map(k => `<th>${k}支</th>`).join("")}</tr>` +
+    `<tr>${hsCols.map(k => `<td style="font-size:20px;font-weight:700">${hs[k]["支"]}</td>`).join("")}</tr>` +
+    `<tr>${hsCols.map(k => `<td>${hs[k]["藏干"].map(s => `<span class="chip ${ELEM_CLASS[ENGINE.WU_XING[s]]}" style="margin:1px">${s}${ENGINE.WU_XING[s]}</span>`).join(" ")}</td>`).join("")}</tr>`;
+
+  // 格局详解
   const d = report.detail;
   const ctx = { "木":{r:109,g:189,b:109}, "火":{r:224,g:101,b:90}, "土":{r:217,g:169,b:92}, "金":{r:216,g:211,b:196}, "水":{r:90,g:155,b:217} }[report.me_x];
   const glow = `rgba(${ctx.r},${ctx.g},${ctx.b},0.10)`;
@@ -332,10 +432,7 @@ function renderResult(result, report) {
      <div class="detail-block"><div class="k">4 · 核心解局思路</div><div class="v">${d["核心用神解法"]}</div></div>`;
 }
 
-$("province").addEventListener("change", function () {
-  $("lng-field").style.display = (this.value === "__custom__") ? "flex" : "none";
-});
-
+/* ---------- 提交 ---------- */
 $("submit").addEventListener("click", function () {
   clearError();
   const year = parseInt($("year").value, 10);
@@ -350,20 +447,20 @@ $("submit").addEventListener("click", function () {
   if (!ENGINE.is_valid_date(year, month, day)) { showError("❌ 历法校验失败：该日期在历史时间轴上不存在！"); $("result").style.display = "none"; return; }
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) { showError("❌ 时间不合法：小时 0-23，分钟 0-59。"); return; }
 
-  let longitude;
-  const prov = $("province").value;
-  if (prov === "__custom__") {
-    longitude = parseFloat($("longitude").value);
-    if (isNaN(longitude) || longitude < -180 || longitude > 180) { showError("❌ 经度数字超出物理边界 (-180.0 到 180.0)。"); return; }
-  } else {
-    longitude = ENGINE.PROVINCE_FALLBACK_LNG[prov];
-  }
+  const loc = resolveLocation();
+  if (loc.error) { showError(loc.error); return; }
 
-  const result = ENGINE.execute_global_fortune_engine(year, month, day, hour, minute, longitude, time_type);
-  const report = ENGINE.generate_report(result);
-  renderResult(result, report);
-  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  try {
+    const result = ENGINE.execute_global_fortune_engine(year, month, day, hour, minute, loc.lng, loc.tz, time_type);
+    const report = ENGINE.generate_report(result);
+    renderResult(result, report, loc);
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    showError("❌ 排盘失败：" + (e && e.message ? e.message : e));
+  }
 });
+
+initLocations();
 </script>
 </body>
 </html>
