@@ -77,8 +77,9 @@
   }
   .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,195,122,0.15); }
   .field .hint { font-size: 12px; color: var(--muted); }
-  .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
-  .radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text); }
+  .radio-group { display: flex; gap: 16px; flex-wrap: wrap; width: fit-content; max-width: 100%; }
+  .radio-group label { display: inline-flex; align-items: flex-start; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text); line-height: 1.6; width: fit-content; max-width: 100%; }
+  .radio-group label input[type="radio"] { margin-top: 3px; flex: 0 0 auto; width: 15px !important; height: 15px !important; accent-color: var(--gold); }
   .radio-group input { accent-color: var(--gold); }
 
   .location-info {
@@ -125,13 +126,32 @@
   .bar-track { flex: 1; height: 14px; background: rgba(0,0,0,0.35); border-radius: 7px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 7px; transition: width .6s ease; }
 
-  .hidden-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
-  .hidden-table th, .hidden-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--panel-border); }
+  .hidden-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+  .hidden-table th, .hidden-table td { padding: 8px 6px; text-align: center; border-bottom: 1px solid var(--panel-border); vertical-align: middle; word-break: break-word; overflow-wrap: anywhere; }
   .hidden-table th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+  .hidden-table td .chips-col { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .hidden-table .chip { padding: 3px 12px; border-radius: 20px; margin: 0 !important; white-space: nowrap; display: inline-block; }
+  .hidden-table td .branch { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .hidden-table td .branch-cell { display: flex; align-items: center; justify-content: center; min-height: 40px; }
 
   .detail-block { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 12px; padding: 18px; margin-top: 12px; }
   .detail-block .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; font-size: 14px; }
   .detail-block .v { color: var(--text); font-size: 14.5px; }
+
+  .qi-yun { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .qi-yun b { color: var(--gold-2); }
+  .dayun-table { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
+  .dayun-item { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 10px; padding: 10px; text-align: center; }
+  .dayun-item .age { font-size: 12px; color: var(--muted); }
+  .dayun-item .gz { font-size: 18px; font-weight: 700; color: var(--gold-2); margin: 4px 0; }
+  .dayun-item .ss { font-size: 12px; color: var(--gold); }
+  .liunian-form { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 14px; margin-bottom: 10px; }
+  .liunian-form input { width: 110px; background: rgba(0,0,0,0.30); border: 1px solid var(--panel-border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 15px; outline: none; }
+  .liunian-form input:focus { border-color: var(--gold); }
+  .mini-btn { padding: 8px 18px; font-size: 14px; font-weight: 700; color: #241a05; background: linear-gradient(180deg, var(--gold-2), var(--gold)); border: none; border-radius: 8px; cursor: pointer; font-family: inherit; }
+  #liunian-result { margin-top: 6px; }
+  .liunian-card { background: rgba(0,0,0,0.22); border: 1px solid rgba(232,195,122,0.25); border-radius: 10px; padding: 14px 16px; font-size: 14.5px; color: var(--text); }
+  .liunian-card .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; }
 
   footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
   footer .warn { color: #f0b8b1; font-weight: 600; margin-top: 6px; }
@@ -149,7 +169,9 @@
     .card { padding: 18px 14px; border-radius: 12px; }
     .grid { grid-template-columns: 1fr; }
     .field.full { grid-column: 1; }
-    .radio-group { flex-direction: column; gap: 10px; }
+    .radio-group { flex-direction: column; gap: 8px; }
+    /* 小屏大运卡片改 2 列，避免每卡过窄拥挤 */
+    .dayun-table { grid-template-columns: repeat(2, 1fr); }
     .result-head .pillars .pillar { margin: 0 5px; }
     .result-head .pillars .tg { font-size: 26px; }
     .result-head .pillars .dz { font-size: 17px; }
@@ -187,6 +209,13 @@
   <div class="card">
     <h2>出生信息</h2>
     <div class="grid">
+      <div class="field full">
+        <label for="gender">性别（用于排大运顺逆）</label>
+        <select id="gender">
+          <option value="male" selected>男</option>
+          <option value="female">女</option>
+        </select>
+      </div>
       <div class="field">
         <label for="year">出生年份（公元）</label>
         <input type="number" id="year" placeholder="如 1990" value="1990">
@@ -234,9 +263,19 @@
       <div class="field full">
         <label>时间类型</label>
         <div class="radio-group">
-          <label><input type="radio" name="time_type" value="1" checked> 现代行政时间（自动转真太阳时，含时区/夏令时）</label>
-          <label><input type="radio" name="time_type" value="2"> 古代视太阳时（输入已按日晷校准，不再纠偏）</label>
+          <label><input type="radio" name="time_type" value="1" checked> 现代行政时间</label>
+          <label><input type="radio" name="time_type" value="2"> 古代视太阳时</label>
         </div>
+        <span class="hint">现代行政时间：按出生地时区换算后自动转为真太阳时；古代视太阳时：输入已按日晷校准，不再纠偏。</span>
+      </div>
+
+      <div class="field full" id="dst-field">
+        <label for="dst">夏令时（DST）</label>
+        <select id="dst">
+          <option value="0" selected>否（标准时间，输入不含夏令时）</option>
+          <option value="1">是（该地当时已实行夏令时）</option>
+        </select>
+        <span class="hint">仅"现代行政时间"生效：默认按标准时间换算；若您输入的时间处于夏令时期间，请选"是"，系统会自动补偿 1 小时。</span>
       </div>
     </div>
 
@@ -266,6 +305,21 @@
     </div>
 
     <div class="section" id="details"></div>
+
+    <div class="section">
+      <h3>大运排盘</h3>
+      <div class="qi-yun" id="qi-yun"></div>
+      <div class="dayun-table" id="dayun-table"></div>
+    </div>
+
+    <div class="section">
+      <h3>流年运势</h3>
+      <div class="liunian-form">
+        查看年份：<input type="number" id="liunian-year" placeholder="如 2030" value="">
+        <button type="button" id="btn-liunian" class="mini-btn">查看</button>
+      </div>
+      <div id="liunian-result"></div>
+    </div>
   </div>
 
   <footer>
@@ -376,8 +430,56 @@ $("city").addEventListener("change", onChange);
 $("custom-tz").addEventListener("input", onChange);
 $("custom-lng").addEventListener("input", onChange);
 
+// 时间类型切换：仅"现代行政时间"才显示夏令时选项
+function updateDstVisibility() {
+  const isModern = document.querySelector('input[name="time_type"]:checked').value === "1";
+  $("dst-field").style.display = isModern ? "" : "none";
+}
+document.querySelectorAll('input[name="time_type"]').forEach(r => r.addEventListener("change", updateDstVisibility));
+updateDstVisibility();
+
+// 流年查看按钮
+$("btn-liunian").addEventListener("click", function () {
+  if (!_lastResult) return;
+  const yr = parseInt($("liunian-year").value, 10);
+  if (!yr || Math.abs(yr) > 3000) { $("liunian-result").innerHTML = '<div class="liunian-card">请填写合理的公历年份。</div>'; return; }
+  $("liunian-result").innerHTML = buildLiuNianHtml(_lastResult, _lastReport, yr);
+});
+$("liunian-year").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-liunian").click(); });
+
 /* ---------- 结果渲染 ---------- */
+let _lastResult = null, _lastReport = null, _lastLoc = null;
+
+function buildDayunHtml(result, report) {
+  const gender = document.getElementById("gender").value;
+  const dy = ENGINE.computeDayunAndLiuNian(result, report, gender);
+  const dirTxt = dy.forward ? "顺排" : "逆排";
+  const qy = `起运：约 <b>${dy.qi_yun_age.toFixed(1)} 岁</b>（${dirTxt}）　大运以约 ${dy.qi_yun_date || "--"} 起换运`;
+  const items = dy.dayun.map(d =>
+    `<div class="dayun-item">
+       <div class="age">${d.from} ~ ${d.to} 岁</div>
+       <div class="gz">${d.gan}${d.zhi}</div>
+       <div class="ss">${d.shishen}</div>
+     </div>`).join("");
+  $("qi-yun").innerHTML = qy;
+  $("dayun-table").innerHTML = items;
+}
+
+function buildLiuNianHtml(result, report, year) {
+  const l = ENGINE.liunianGanzhi(result, year);
+  const ssGan = ENGINE.get_shishen_relation(result.ri_zhu, l.gan);
+  const ssZhi = ENGINE.get_shishen_relation(result.ri_zhu, ENGINE.primaryHiddenStem(l.zhi));
+  // 日主所在年岁
+  const bzAge = Math.max(0, l.bz - (result.bz_year || result.original_year));
+  const wxGan = ENGINE.WU_XING[l.gan], wxZhi = ENGINE.WU_XING[l.zhi];
+  return `<div class="liunian-card">
+    <div class="k">${l.year} 年（${l.gan}${l.zhi}）· 岁数约 ${bzAge}　天干【${l.gan}·${ENGINE.YIN_YANG[l.gan]}${wxGan}】/${ssGan}　地支【${l.zhi}·${ENGINE.YIN_YANG[l.zhi]}${wxZhi}】/${ssZhi}</div>
+    <div class="v">流年以立春换年。天干代表当年的主要趋势、外在显性力量；地支代表该年隐藏的资源、环境与根基。以${l.gan}${l.zhi}所对应十神（${ssGan}/${ssZhi}）对比《格局详解》中的喜用方向，五行生克趋吉则可大胆作为，冲克泄耗则宜稳中求进。</div>
+  </div>`;
+}
+
 function renderResult(result, report, loc) {
+  _lastResult = result; _lastReport = report; _lastLoc = loc;
   $("result").style.display = "block";
   const ydisp = result.original_year < 0 ? `公元前 ${Math.abs(result.original_year)}` : `公元 ${result.original_year}`;
   const lngTxt = `${Math.abs(result.longitude).toFixed(2)}°${result.longitude >= 0 ? "E" : "W"}`;
@@ -410,13 +512,17 @@ function renderResult(result, report, loc) {
     </div>`;
   }).join("");
 
-  // 地支藏干表
+  // 地支藏干表（固定分栏：支 + 藏干纵向排列，避免窄列把单藏干挤成竖排）
   const hs = report.hidden_stems;
   const hsCols = ["年", "月", "日", "时"];
   $("hidden-table").innerHTML =
     `<tr>${hsCols.map(k => `<th>${k}支</th>`).join("")}</tr>` +
-    `<tr>${hsCols.map(k => `<td style="font-size:20px;font-weight:700">${hs[k]["支"]}</td>`).join("")}</tr>` +
-    `<tr>${hsCols.map(k => `<td>${hs[k]["藏干"].map(s => `<span class="chip ${ELEM_CLASS[ENGINE.WU_XING[s]]}" style="margin:1px">${s}${ENGINE.WU_XING[s]}</span>`).join(" ")}</td>`).join("")}</tr>`;
+    `<tr>${hsCols.map(k =>
+      `<td><div class="branch-cell"><span class="branch">${hs[k]["支"]}</span></div></td>`
+    ).join("")}</tr>` +
+    `<tr>${hsCols.map(k => `<td><div class="chips-col">${
+      hs[k]["藏干"].map(s => `<span class="chip ${ELEM_CLASS[ENGINE.WU_XING[s]]}">${s}${ENGINE.WU_XING[s]}</span>`).join("")
+    }</div></td>`).join("")}</tr>`;
 
   // 格局详解
   const d = report.detail;
@@ -430,6 +536,13 @@ function renderResult(result, report, loc) {
      <div class="detail-block"><div class="k">2 · 性格双重拆解</div><div class="v">${d["性格双重拆解"]}</div></div>
      <div class="detail-block"><div class="k">3 · 事业天花板方向</div><div class="v">${d["事业天花板"]}</div></div>
      <div class="detail-block"><div class="k">4 · 核心解局思路</div><div class="v">${d["核心用神解法"]}</div></div>`;
+
+  // 大运 + 流年（默认流年预填出生当年）
+  buildDayunHtml(result, report);
+  const curYear = Math.max(result.original_year, 1900);
+  const lyYear = $("liunian-year").value || curYear.toString();
+  $("liunian-year").value = lyYear;
+  $("liunian-result").innerHTML = buildLiuNianHtml(result, report, parseInt(lyYear, 10));
 }
 
 /* ---------- 提交 ---------- */
@@ -441,6 +554,7 @@ $("submit").addEventListener("click", function () {
   const hour = parseInt($("hour").value, 10);
   const minute = parseInt($("minute").value, 10);
   const time_type = parseInt(document.querySelector('input[name="time_type"]:checked').value, 10);
+  const useDst = document.getElementById("dst").value === "1";
 
   if (isNaN(year) || year === 0) { showError("❌ 错误：历史上不存在公元 0 年！请输入 1 或 -1 等非零年份。"); $("result").style.display = "none"; return; }
   if (isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) { showError("❌ 请完整填写年份、月、日、时、分。"); return; }
@@ -451,7 +565,7 @@ $("submit").addEventListener("click", function () {
   if (loc.error) { showError(loc.error); return; }
 
   try {
-    const result = ENGINE.execute_global_fortune_engine(year, month, day, hour, minute, loc.lng, loc.tz, time_type);
+    const result = ENGINE.execute_global_fortune_engine(year, month, day, hour, minute, loc.lng, loc.tz, time_type, useDst && time_type === 1);
     const report = ENGINE.generate_report(result);
     renderResult(result, report, loc);
     $("result").scrollIntoView({ behavior: "smooth", block: "start" });

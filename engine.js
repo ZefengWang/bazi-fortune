@@ -252,6 +252,24 @@ function localToUtcMs(y, mo, d, h, mi, timeZone) {
   return ts;
 }
 
+/* 获取该时区"标准时间（非夏令时）"的固定偏移（分钟，东正西负）。
+ * 原理：对同一年取 12 个代表日（每月 15 日）求偏移，取其中的"最小值"
+ * （夏令时总是让偏移增大 60 分钟，故全年偏移最小值即标准时间基准偏移），
+ * 避免被出生日期是否处于 DST 影响。
+ * 用于"输入时间为标准时间、不自动套夏令时"的用户选项（默认）。 */
+function getStandardOffsetMin(timeZone) {
+  let min = Infinity;
+  for (let mo = 1; mo <= 12; mo++) {
+    const y = 2024, d = 15, h = 12, mi = 0;
+    const lms = dateToMsUtc(y, mo, d, h, mi);
+    let ts = lms;
+    for (let i = 0; i < 2; i++) ts = lms - getTimeZoneOffsetMs(ts, timeZone);
+    const off = Math.round((lms - ts) / 60000);
+    if (off < min) min = off;
+  }
+  return min;
+}
+
 const msToJd = ms => ms / 86400000 + 2440587.5;
 
 /* ---------------- 4. 格局详解数据 ---------------- */
@@ -361,14 +379,17 @@ function primaryHiddenStem(branch) {
  * @param string timezone   IANA 时区（如 "Asia/Shanghai"、"America/New_York"）
  * @param number time_type  1=现代行政时间（自动转真太阳时）；2=古代视太阳时（输入已校准）
  */
-function execute_global_fortune_engine(year, month, day, hour, minute, longitude, timezone, time_type) {
+function execute_global_fortune_engine(year, month, day, hour, minute, longitude, timezone, time_type, use_dst) {
   let t_year = year, t_month = month, t_day = day, t_hour = hour, t_min = minute;
   let offset_min = 0, eot_min = 0;
 
   if (time_type === 1) {
-    // 1) 时区偏移（含夏令时）：当地比 UTC 快多少分钟
+    // 1) 时区偏移（分钟，东正西负）。
     const inputMs = dateToMsUtc(year, month, day, hour, minute);
-    const utcMs = localToUtcMs(year, month, day, hour, minute, timezone);
+    // use_dst: true=用户声明所填时间为夏令时（按当日真实偏移）；false/未传=标准时间（去掉夏令时）
+    const utcMs = use_dst
+      ? localToUtcMs(year, month, day, hour, minute, timezone)
+      : dateToMsUtc(year, month, day, hour, minute) - getStandardOffsetMin(timezone) * 60000;
     offset_min = Math.round((inputMs - utcMs) / 60000);
 
     // 2) 均时差
@@ -450,6 +471,106 @@ function execute_global_fortune_engine(year, month, day, hour, minute, longitude
 
 /* ---------------- 7. 解译报告（含藏干、身强弱、喜用神） ---------------- */
 const ELEMENT_ORDER = ["木","火","土","金","水"];
+
+/* —— 8. 大运 / 流年 ——
+ * 起运岁数与排运方向：
+ *   ctxgender: 'male'|'female'
+ *   年干阳 → 男顺女逆；年干阴 → 男逆女顺。
+ *   起运：顺排取出生时刻之后最近一个"节"，逆排取之前最近一个"节"，
+ *        间隔天数 ÷3 折算起运年（1 天 = 4 个月）。
+ *   "节"取节气序号中的双数索引（0 立春、2 惊蛰、4 清明 …… 22 小寒）。
+ */
+
+/* JD → 公历日期（格列历，格） */
+function jdToDate(jd) {
+  const z = Math.floor(jd + 0.5);
+  let a;
+  if (z < 2299161) a = z;
+  else {
+    const alpha = floordiv(z - 1867216.25, 36524.25);
+    a = z + 1 + alpha - floordiv(alpha, 4);
+  }
+  const b = a + 1524;
+  const c = floordiv(b - 122.1, 365.25);
+  const d = Math.floor(365.25 * c);
+  const e = floordiv(b - d, 30.6001);
+  const day = b - d - Math.floor(30.6001 * e);
+  const month = (e < 14) ? e - 1 : e - 13;
+  let year = (month > 2) ? c - 4716 : c - 4715;
+  if (year <= 0) year -= 1;
+  return { year, month, day };
+}
+
+/* 附近 5 年内较大范围的"节"查找 */
+function nearestSolarTermJd(birth_jd, dir, bz_year) {
+  // dir: 1 → 找出生点之后最近的节；-1 → 之前最近的节
+  // 覆盖出生年前后若干年，保证能找到
+  for (let yr = bz_year - 2; yr <= bz_year + 2; yr++) {
+    for (let i = 0; i < 24; i += 2) {          // 只取"节"（索引 0,2,4,...22）
+      const term = solarTermUtJd(yr, i);
+      const gap = term - birth_jd;
+      if (dir === 1 && gap > 1e-4) return term;
+      if (dir === -1 && gap < -1e-4) return term;
+    }
+  }
+  return null;
+}
+
+function computeDayunAndLiuNian(result, bz_report, gender) {
+  const { year_tg, month_tg, month_dz, bz_year, utc_jd } = result;
+  const year_gan_yang = YIN_YANG[year_tg] === "阳";   // 年干阴阳
+  const is_male = gender === "male";
+  // 阳年男 / 阴年女 → 顺排；阴年男 / 阳年女 → 逆排
+  const forward = (year_gan_yang === is_male);
+
+  const start = nearestSolarTermJd(utc_jd, forward ? 1 : -1, bz_year);
+  let qi_yun_age = 0, qi_yun_days = 0, qi_yun_year = bz_year, qi_yun_date = "";
+  if (start != null) {
+    // 出生在节之后到下一个节之间的天数 / 前一个节到出生之间的天数
+    let span;
+    if (forward) span = start - utc_jd;
+    else {
+      const prev = nearestSolarTermJd(utc_jd, -1, bz_year);
+      span = prev != null ? utc_jd - prev : 0;
+    }
+    qi_yun_days = span;
+    // 3 天 = 1 年；余数 1 天 = 4 个月；1/6 天 ≈ 1 年（以小时计）
+    const total_days = span;
+    qi_yun_age = total_days / 3.0;
+    qi_yun_year = bz_year + Math.floor(qi_yun_age);
+    // 精确起运公历日期（无闰余近似）
+    const qiJd = utc_jd + span * (forward ? 1 : 1);
+    const d = jdToDate(forward ? start : (nearestSolarTermJd(utc_jd, -1, bz_year) || start));
+    qi_yun_date = `${d.year}-${String(d.month).padStart(2,"0")}-${String(d.day).padStart(2,"0")}`;
+  }
+
+  // 从月柱起排大运：顺排 → +1 推进；逆排 → -1
+  const idx_tg = TIANGAN.indexOf(month_tg);
+  const idx_dz = DIZHI.indexOf(month_dz);
+  const step = forward ? 1 : -1;
+  const dayun = [];
+  let startAge = Math.floor(qi_yun_age < 0 ? 0 : qi_yun_age);
+  for (let k = 0; k < 8; k++) {
+    const tg = TIANGAN[pymod(idx_tg + step * (k + 1), 10)];
+    const dz = DIZHI[pymod(idx_dz + step * (k + 1), 12)];
+    const from = startAge + k * 10;
+    const to = from + 9;
+    const ss = get_shishen_relation(result.ri_zhu, tg);
+    dayun.push({ gan: tg, zhi: dz, from, to, shishen: ss });
+  }
+
+  return { qi_yun_age, qi_yun_days, qi_yun_date, dayun, forward };
+}
+
+/* 流年干支：以立春换年（与年柱口径一致） */
+function liunianGanzhi(birth_info, year) {
+  const ly = birth_info && birth_info.bz_year !== undefined ? year : year;
+  const li_chun = solarTermUtJd(year, 0);
+  const bz = birth_info && birth_info.utc_jd !== undefined && birth_info.utc_jd < li_chun
+    ? year - 1 : year;
+  const y_idx = (bz > 0) ? pymod(bz - 4, 60) : pymod(bz - 3, 60);
+  return { gan: TIANGAN[y_idx % 10], zhi: DIZHI[y_idx % 12], year, bz };
+}
 
 /* 生我者（印的五行） */
 function parentElementOf(me_x) {
@@ -551,7 +672,8 @@ if (typeof module !== "undefined" && module.exports) {
     TIANGAN, DIZHI, WU_XING, YIN_YANG, SHISHEN_MAP, PROVINCE_FALLBACK_LNG,
     HIDDEN_STEMS, TERM_NAMES,
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
-    solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs,
+    solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
+    computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL
   };
 } else {
@@ -559,7 +681,8 @@ if (typeof module !== "undefined" && module.exports) {
     TIANGAN, DIZHI, WU_XING, YIN_YANG, SHISHEN_MAP, PROVINCE_FALLBACK_LNG,
     HIDDEN_STEMS, TERM_NAMES,
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
-    solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs,
+    solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
+    computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL
   };
 }
