@@ -426,6 +426,20 @@ const PILLAR_MEANING = {
   "时柱":{"宫位":"子女 · 晚年（约 49 岁后）","说明":"代表子女、下属与晚年归宿。时支为子女宫，反映晚景与人生收尾的格局。"}
 };
 
+/* 十天干日主性格总论（日主为命局核心） */
+const TIANGAN_CHARACTER = {
+  "甲":{"五行":"阳木","意象":"参天大树、栋梁之材","性格":"正直仁厚、积极向上、有担当与领导力，如大树般向上生长、庇护他人；但易固执要强、不喜低头，压力大时容易硬扛。","特质":"适合开拓进取、独当一面的角色，忌被压抑束缚，喜自由生长空间。"},
+  "乙":{"五行":"阴木","意象":"花草藤蔓、柔韧之木","性格":"温和柔韧、灵活变通、善于借势，如藤蔓般能屈能伸、适应力强；但易优柔寡断、依赖他人，缺乏主见时随波逐流。","特质":"适合协调、辅助、策划类工作，善用柔劲化解矛盾，忌硬碰硬。"},
+  "丙":{"五行":"阳火","意象":"太阳之火、光明炽热","性格":"热情开朗、光明磊落、感染力强，如太阳般温暖照亮他人；但易急躁冲动、锋芒外露，热情来得快去得也快。","特质":"适合舞台、公关、开拓等需要感染力的领域，忌过度张扬引火烧身。"},
+  "丁":{"五行":"阴火","意象":"灯烛之火、星光温润","性格":"细腻敏锐、温和内敛、洞察力强，如灯烛般温暖而专注；但易多愁善感、思虑过重，情绪起伏较内隐。","特质":"适合精细、研究、艺术类工作，善用专注与洞察，忌钻牛角尖。"},
+  "戊":{"五行":"阳土","意象":"高山厚土、城墙之土","性格":"稳重踏实、诚信可靠、包容力强，如高山般厚重可依；但易固执保守、反应偏慢，不喜变化与冒险。","特质":"适合管理、金融、实业等需要稳定与信任的领域，忌僵化不知变通。"},
+  "己":{"五行":"阴土","意象":"田园沃土、滋养之土","性格":"温和包容、心思细腻、善于滋养成全他人，如田园般默默孕育；但易多虑内耗、缺乏魄力，凡事想得太多。","特质":"适合后勤、教育、服务等滋养型角色，善用耐心与细致，忌过度自我牺牲。"},
+  "庚":{"五行":"阳金","意象":"刀剑之金、刚锐肃杀","性格":"刚毅果决、重义气、行动力强，如刀剑般锋利果断；但易锋芒伤人、过于直接，不擅委婉与妥协。","特质":"适合竞争、执法、技术攻坚等硬核领域，忌刚愎自用、树敌过多。"},
+  "辛":{"五行":"阴金","意象":"珠玉之金、精致贵重","性格":"精致敏锐、自尊心强、追求品质，如珠玉般温润而贵重；但易敏感挑剔、好面子，对人对己要求过高。","特质":"适合审美、金融、精密技术等讲究品质的领域，忌过度追求完美而内耗。"},
+  "壬":{"五行":"阳水","意象":"江河大海、奔流不息","性格":"豁达聪慧、足智多谋、不拘小节，如江河般奔涌向前、包容万物；但易散漫随性、缺乏定性，想法多而落地少。","特质":"适合开拓、贸易、流动性强的领域，善用智慧与变通，忌虎头蛇尾。"},
+  "癸":{"五行":"阴水","意象":"雨露泉水、润物无声","性格":"温柔细腻、直觉敏锐、善于以柔克刚，如雨露般无声滋养；但易多疑敏感、内心戏多，遇事容易退缩。","特质":"适合研究、策划、幕后等需要洞察的领域，善用直觉与耐心，忌过度隐忍。"}
+};
+
 /* ---------------- 5. 十神 ---------------- */
 function get_shishen_relation(me, other) {
   const me_x = WU_XING[me], me_y = YIN_YANG[me];
@@ -622,13 +636,27 @@ function computeDayunAndLiuNian(result, bz_report, gender) {
   const step = forward ? 1 : -1;
   const dayun = [];
   let startAge = Math.floor(qi_yun_age < 0 ? 0 : qi_yun_age);
+  // 喜用神方向 → 该步大运吉凶
+  const yong = (bz_report && bz_report.yong_shen) || "";
+  const xi = [];
+  if (yong.indexOf("官杀") >= 0) xi.push("正官", "七杀");
+  if (yong.indexOf("食伤") >= 0) xi.push("食神", "伤官");
+  if (yong.indexOf("财") >= 0) xi.push("正财", "偏财");
+  if (yong.indexOf("印") >= 0) xi.push("正印", "偏印");
+  if (yong.indexOf("比劫") >= 0) xi.push("比肩", "劫财");
+  const ji = [];
+  if (yong.indexOf("克泄耗") >= 0) ji.push("正印", "偏印", "比肩", "劫财");
+  if (yong.indexOf("生扶") >= 0) ji.push("正官", "七杀", "食神", "伤官", "正财", "偏财");
   for (let k = 0; k < 8; k++) {
     const tg = TIANGAN[pymod(idx_tg + step * (k + 1), 10)];
     const dz = DIZHI[pymod(idx_dz + step * (k + 1), 12)];
     const from = startAge + k * 10;
     const to = from + 9;
     const ss = get_shishen_relation(result.ri_zhu, tg);
-    dayun.push({ gan: tg, zhi: dz, from, to, shishen: ss });
+    let luck = "平", advice = "此运平稳过渡，宜守成蓄力，静待时机。";
+    if (xi.includes(ss)) { luck = "吉"; advice = "此运得喜用神之力，顺势而为可事半功倍，宜大胆进取、把握机遇。"; }
+    else if (ji.includes(ss)) { luck = "凶"; advice = "此运逢忌神当道，宜低调守成、稳中求进，避免冒进与重大决策。"; }
+    dayun.push({ gan: tg, zhi: dz, from, to, shishen: ss, luck, advice });
   }
 
   return { qi_yun_age, qi_yun_days, qi_yun_date, dayun, forward };
@@ -755,7 +783,7 @@ if (typeof module !== "undefined" && module.exports) {
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
-    SHISHEN_DETAILS, PILLAR_MEANING
+    SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER
   };
 } else {
   window.BaziEngine = {
@@ -765,6 +793,6 @@ if (typeof module !== "undefined" && module.exports) {
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
-    SHISHEN_DETAILS, PILLAR_MEANING
+    SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER
   };
 }

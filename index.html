@@ -146,6 +146,11 @@
   .dayun-item .gz { font-size: 18px; font-weight: 700; color: var(--gold-2); margin: 4px 0; }
   .dayun-item .ss { font-size: 12px; color: var(--gold); }
   .dayun-item .brief { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; text-align: left; border-top: 1px dashed rgba(255,255,255,0.10); padding-top: 6px; }
+  .dayun-item .luck { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 8px; margin-left: 4px; vertical-align: 1px; }
+  .dayun-item .luck-good { color: #7fd6a0; background: rgba(127,214,160,0.15); }
+  .dayun-item .luck-bad { color: #f0b8b1; background: rgba(240,184,177,0.15); }
+  .dayun-item .luck-mid { color: #d9c9a0; background: rgba(217,201,160,0.15); }
+  .dayun-item .advice { font-size: 12px; color: var(--text); margin-top: 6px; line-height: 1.5; text-align: left; }
   .liunian-form { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 14px; margin-bottom: 10px; }
   .liunian-form input { width: 110px; background: rgba(0,0,0,0.30); border: 1px solid var(--panel-border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 15px; outline: none; }
   .liunian-form input:focus { border-color: var(--gold); }
@@ -308,9 +313,15 @@
       <table class="hidden-table" id="hidden-table"></table>
     </div>
 
+    <div class="section" id="master-detail"></div>
+
     <div class="section" id="details"></div>
 
     <div class="section" id="pillars-detail"></div>
+
+    <div class="section" id="wuxing-detail"></div>
+
+    <div class="section" id="hidden-detail"></div>
 
     <div class="section" id="shishen-detail"></div>
 
@@ -466,11 +477,14 @@ function buildDayunHtml(result, report) {
   const items = dy.dayun.map(d => {
     const sd = ENGINE.SHISHEN_DETAILS[d.shishen];
     const brief = sd ? sd["含义"] : "";
+    const luckCls = d.luck === "吉" ? "luck-good" : (d.luck === "凶" ? "luck-bad" : "luck-mid");
+    const luckTxt = d.luck === "吉" ? "吉" : (d.luck === "凶" ? "凶" : "平");
     return `<div class="dayun-item">
        <div class="age">${d.from} ~ ${d.to} 岁</div>
        <div class="gz">${d.gan}${d.zhi}</div>
-       <div class="ss">${d.shishen}</div>
+       <div class="ss">${d.shishen} <span class="luck ${luckCls}">${luckTxt}</span></div>
        <div class="brief">${brief}</div>
+       <div class="advice">${d.advice}</div>
      </div>`;
   }).join("");
   $("qi-yun").innerHTML = qy;
@@ -541,10 +555,22 @@ function renderResult(result, report, loc) {
       hs[k]["藏干"].map(s => `<span class="chip ${ELEM_CLASS[ENGINE.WU_XING[s]]}">${s}${ENGINE.WU_XING[s]}</span>`).join("")
     }</div></td>`).join("")}</tr>`;
 
-  // 格局详解
-  const d = report.detail;
+  // 日主五行色
   const ctx = { "木":{r:109,g:189,b:109}, "火":{r:224,g:101,b:90}, "土":{r:217,g:169,b:92}, "金":{r:216,g:211,b:196}, "水":{r:90,g:155,b:217} }[report.me_x];
   const glow = `rgba(${ctx.r},${ctx.g},${ctx.b},0.10)`;
+
+  // 日主性格总论
+  const tc = ENGINE.TIANGAN_CHARACTER[result.ri_zhu];
+  $("master-detail").innerHTML =
+    `<h3>日主性格总论 · <span style="color:var(--gold)">${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]}</span></h3>
+     <div class="detail-block" style="border-color:rgba(${ctx.r},${ctx.g},${ctx.b},0.35);background:${glow}">
+       <div class="k">五行 · 意象</div><div class="v">${tc["五行"]} · ${tc["意象"]}</div>
+     </div>
+     <div class="detail-block"><div class="k">性格特质</div><div class="v">${tc["性格"]}</div></div>
+     <div class="detail-block"><div class="k">发展特质</div><div class="v">${tc["特质"]}</div></div>`;
+
+  // 格局详解
+  const d = report.detail;
   $("details").innerHTML =
     `<h3>格局详解 · <span style="color:var(--gold)">${d["名称"]}</span></h3>
      <div class="detail-block" style="border-color:rgba(${ctx.r},${ctx.g},${ctx.b},0.35);background:${glow}">
@@ -564,6 +590,42 @@ function renderResult(result, report, loc) {
          <div class="v">${pd[k]["说明"]}</div>
        </div>`
     ).join("");
+
+  // 五行能量详解
+  const order5 = ["木","火","土","金","水"];
+  const ep = report.elements_power;
+  const maxEp = Math.max(...order5.map(wx => ep[wx]), 1);
+  const sorted5 = order5.slice().sort((a, b) => ep[b] - ep[a]);
+  const strongest = sorted5[0], weakest = sorted5[4];
+  const relTxt = { "木":"生我者（印）", "火":"我生者（食伤）", "土":"我克者（财）", "金":"克我者（官杀）", "水":"同我者（比劫）" };
+  $("wuxing-detail").innerHTML =
+    `<h3>五行能量详解</h3>
+     <div class="detail-block">
+       <div class="k">能量分布</div>
+       <div class="v">${order5.map(wx =>
+         `<span style="color:${WX_HEX[wx]};font-weight:700">${wx}</span> ${Math.round(ep[wx])}`).join("　·　")}
+       </div>
+     </div>
+     <div class="detail-block">
+       <div class="k">旺衰解读</div>
+       <div class="v">${report.power_status}。命局${strongest}最旺、${weakest}最弱；${strongest}为${relTxt[strongest]}，${weakest}为${relTxt[weakest]}。${report.yong_shen.indexOf("生扶")>=0 ? "日主偏弱，需印比生扶，宜补印星比劫之五行。" : report.yong_shen.indexOf("克泄耗")>=0 ? "日主偏强，宜以官杀、食伤、财星克泄耗，平衡全局。" : "日主中和，五行流通则吉，顺势而为。"}</div>
+     </div>
+     <div class="detail-block">
+       <div class="k">喜用神方向</div>
+       <div class="v">${report.yong_shen}</div>
+     </div>`;
+
+  // 地支藏干十神
+  $("hidden-detail").innerHTML =
+    `<h3>地支藏干十神</h3>` +
+    ["年","月","日","时"].map(k => {
+      const dz = hs[k]["支"];
+      const items = hs[k]["藏干"].map(s => {
+        const ss = ENGINE.get_shishen_relation(result.ri_zhu, s);
+        return `<span class="chip ${ELEM_CLASS[ENGINE.WU_XING[s]]}">${s}${ENGINE.WU_XING[s]}·${ss}</span>`;
+      }).join(" ");
+      return `<div class="detail-block"><div class="k">${k}支 ${dz}</div><div class="v">${items}</div></div>`;
+    }).join("");
 
   // 十神详解（命盘出现的十神，去重）
   const ssSet = [];
