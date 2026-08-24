@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="全球全历史高精度八字命理排盘演示工具。仅供学习研究使用，禁止任何商业用途。">
+<title>八字命理排盘引擎 · 学习演示</title>
+<style>
+  :root {
+    --bg: #0b0e1a;
+    --bg-2: #12172b;
+    --panel: rgba(255, 255, 255, 0.04);
+    --panel-border: rgba(255, 255, 255, 0.10);
+    --gold: #e8c37a;
+    --gold-2: #f3d9a4;
+    --text: #e8e6df;
+    --muted: #9aa0b4;
+    --danger: #e0655a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Noto Sans CJK SC", "WenQuanYi Micro Hei", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #1c2440 0%, transparent 60%),
+      radial-gradient(1000px 600px at 90% 10%, #241a32 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .disclaimer {
+    background: linear-gradient(90deg, #3a1d1b, #2a1513);
+    border: 1px solid #6b3732;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 18px auto 0;
+    max-width: 980px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .disclaimer .icon { font-size: 22px; line-height: 1.5; }
+  .disclaimer .title { color: #f0b8b1; font-weight: 700; margin-bottom: 4px; }
+  .disclaimer .body { color: #d9b7b1; font-size: 14px; }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  header { text-align: center; margin: 28px 0 8px; }
+  header h1 {
+    font-size: 30px; font-weight: 800; letter-spacing: 2px;
+    background: linear-gradient(180deg, var(--gold-2), var(--gold));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header .subtitle { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 16px; padding: 26px; margin-top: 22px; backdrop-filter: blur(6px);
+  }
+  .card h2 {
+    font-size: 18px; margin-bottom: 18px; color: var(--gold-2); letter-spacing: 1px;
+    border-left: 3px solid var(--gold); padding-left: 12px;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 13px; color: var(--muted); }
+  .field input, .field select {
+    background: rgba(0,0,0,0.30); border: 1px solid var(--panel-border); border-radius: 8px;
+    color: var(--text); padding: 10px 12px; font-size: 15px; font-family: inherit; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232,195,122,0.15); }
+  .field .hint { font-size: 12px; color: var(--muted); }
+  .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
+  .radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text); }
+  .radio-group input { accent-color: var(--gold); }
+
+  button#submit {
+    margin-top: 20px; width: 100%; padding: 14px; font-size: 16px; font-weight: 700; letter-spacing: 2px;
+    color: #241a05; background: linear-gradient(180deg, var(--gold-2), var(--gold));
+    border: none; border-radius: 10px; cursor: pointer; transition: transform .15s, filter .2s; font-family: inherit;
+  }
+  button#submit:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  button#submit:active { transform: translateY(0); }
+
+  .error-msg { display: none; margin-top: 14px; padding: 12px 16px; background: rgba(224,101,90,0.12); border: 1px solid rgba(224,101,90,0.5); border-radius: 8px; color: #f0b8b1; font-size: 14px; }
+
+  #result { display: none; }
+  .result-head { text-align: center; padding: 8px 0 2px; }
+  .result-head .pillars { font-size: 26px; font-weight: 800; letter-spacing: 4px; margin: 14px 0 6px; }
+  .result-head .pillars .pillar { display: inline-block; margin: 0 10px; }
+  .result-head .pillars .tg { display: block; font-size: 34px; }
+  .result-head .pillars .dz { display: block; font-size: 22px; color: var(--gold-2); margin-top: -4px; }
+  .result-head .pillars .col-label { display: block; font-size: 12px; color: var(--muted); letter-spacing: 2px; margin-top: 4px; }
+  .result-head .master { color: var(--gold); font-size: 16px; margin-top: 4px; }
+  .result-head .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .section { margin-top: 22px; }
+  .section h3 { font-size: 15px; color: var(--gold-2); margin-bottom: 10px; letter-spacing: 1px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { padding: 6px 14px; border-radius: 20px; font-size: 13px; background: rgba(255,255,255,0.06); border: 1px solid var(--panel-border); }
+  .chip.mu { color: #6dbd6d; border-color: rgba(109,189,109,0.4); }
+  .chip.huo { color: #e0655a; border-color: rgba(224,101,90,0.4); }
+  .chip.tu { color: #d9a95c; border-color: rgba(217,169,92,0.4); }
+  .chip.jin { color: #d8d3c4; border-color: rgba(216,211,196,0.4); }
+  .chip.shui { color: #5a9bd9; border-color: rgba(90,155,217,0.4); }
+  .chip.status { color: var(--gold); border-color: rgba(232,195,122,0.5); }
+
+  .bars { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 40px; font-size: 14px; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 14px; background: rgba(0,0,0,0.35); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 7px; transition: width .6s ease; }
+
+  .detail-block { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 12px; padding: 18px; margin-top: 12px; }
+  .detail-block .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; font-size: 14px; }
+  .detail-block .v { color: var(--text); font-size: 14.5px; }
+
+  footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
+  footer .warn { color: #f0b8b1; font-weight: 600; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 24px; }
+    .result-head .pillars .tg { font-size: 26px; }
+    .result-head .pillars .dz { font-size: 18px; }
+    .disclaimer { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="disclaimer">
+  <div class="icon">⚠️</div>
+  <div>
+    <div class="title">免责声明</div>
+    <div class="body">
+      本工具为基于传统四柱八字理论编写的<strong>技术演示程序</strong>，其内容不构成任何形式的人生、健康、投资、婚恋等建议，亦不代表任何科学结论。
+      本页面<strong>仅供个人学习与编程研究使用，严格禁止任何商业用途</strong>（包括但不限于付费算命、引流变现、植入广告、打包转售等）。
+      请理性看待传统文化，勿将演示结果用于任何实际决策。若您不接受上述声明，请立即关闭本页面。
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <h1>八字命理排盘引擎</h1>
+    <div class="subtitle">全球全历史高精度 · 四柱八字 · 十神格局详解（学习演示版）</div>
+  </header>
+
+  <div class="card">
+    <h2>出生信息</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="year">出生年份（公元）</label>
+        <input type="number" id="year" placeholder="如 1990" value="1990">
+        <span class="hint">正数为公元，负数为公元前</span>
+      </div>
+      <div class="field">
+        <label for="month">出生月份（公历）</label>
+        <input type="number" id="month" placeholder="1-12" min="1" max="12" value="1">
+      </div>
+      <div class="field">
+        <label for="day">出生日期</label>
+        <input type="number" id="day" placeholder="1-31" min="1" max="31" value="1">
+      </div>
+      <div class="field">
+        <label for="hour">出生小时</label>
+        <input type="number" id="hour" placeholder="0-23" min="0" max="23" value="0">
+      </div>
+      <div class="field">
+        <label for="minute">出生分钟</label>
+        <input type="number" id="minute" placeholder="0-59" min="0" max="59" value="0">
+      </div>
+      <div class="field">
+        <label for="province">出生地（省/市/自治区）</label>
+        <select id="province">
+          <option value="北京市">北京市</option>
+          <option value="上海市">上海市</option>
+          <option value="天津市">天津市</option>
+          <option value="重庆市">重庆市</option>
+          <option value="河北省">河北省</option>
+          <option value="山西省">山西省</option>
+          <option value="辽宁省">辽宁省</option>
+          <option value="吉林省">吉林省</option>
+          <option value="黑龙江省">黑龙江省</option>
+          <option value="江苏省">江苏省</option>
+          <option value="浙江省">浙江省</option>
+          <option value="安徽省">安徽省</option>
+          <option value="福建省">福建省</option>
+          <option value="江西省">江西省</option>
+          <option value="山东省">山东省</option>
+          <option value="河南省">河南省</option>
+          <option value="湖北省">湖北省</option>
+          <option value="湖南省">湖南省</option>
+          <option value="广东省">广东省</option>
+          <option value="海南省">海南省</option>
+          <option value="四川省">四川省</option>
+          <option value="贵州省">贵州省</option>
+          <option value="云南省">云南省</option>
+          <option value="陕西省">陕西省</option>
+          <option value="甘肃省">甘肃省</option>
+          <option value="青海省">青海省</option>
+          <option value="台湾省">台湾省</option>
+          <option value="内蒙古自治区">内蒙古自治区</option>
+          <option value="广西壮族自治区">广西壮族自治区</option>
+          <option value="西藏自治区">西藏自治区</option>
+          <option value="宁夏回族自治区">宁夏回族自治区</option>
+          <option value="新疆维吾尔自治区">新疆维吾尔自治区</option>
+          <option value="__custom__">海外 / 自定义经度</option>
+        </select>
+      </div>
+      <div class="field" id="lng-field" style="display:none;">
+        <label for="longitude">精确经度（东经正 / 西经负）</label>
+        <input type="number" id="longitude" step="any" placeholder="如 35.2 或 -74.0" value="35.2">
+      </div>
+      <div class="field full">
+        <label>时间类型</label>
+        <div class="radio-group">
+          <label><input type="radio" name="time_type" value="1" checked> 现代行政时间（自动真太阳时纠偏）</label>
+          <label><input type="radio" name="time_type" value="2"> 古代视太阳时（真实太阳高度角）</label>
+        </div>
+      </div>
+    </div>
+    <button id="submit">开始排盘测算</button>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div class="card" id="result">
+    <div class="result-head">
+      <h2>排盘结果</h2>
+      <div class="meta" id="result-meta"></div>
+      <div class="pillars" id="pillars"></div>
+      <div class="master" id="master"></div>
+    </div>
+
+    <div class="section">
+      <h3>五行能量状态</h3>
+      <div class="chips" id="status-chip"></div>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="section" id="details"></div>
+  </div>
+
+  <footer>
+    <div>本页面由 Python 命理引擎逐行移植为前端 JavaScript 实现，逻辑保持一致。</div>
+    <div class="warn">⚠️ 仅供学习研究使用 · 禁止任何商业用途 · 结果不构成任何建议</div>
+  </footer>
+</div>
+
+<script src="engine.js"></script>
+<script>
+"use strict";
+const ENGINE = window.BaziEngine;
+const $ = (id) => document.getElementById(id);
+const WX_HEX = { "木":"#6dbd6d", "火":"#e0655a", "土":"#d9a95c", "金":"#d8d3c4", "水":"#5a9bd9" };
+
+function showError(msg) { const el = $("error"); el.textContent = msg; el.style.display = "block"; }
+function clearError() { $("error").style.display = "none"; }
+
+function renderResult(result, report) {
+  $("result").style.display = "block";
+  const ydisp = result.original_year < 0 ? `公元前 ${Math.abs(result.original_year)}` : `公元 ${result.original_year}`;
+  $("result-meta").textContent =
+    `${ydisp} | 经度 ${result.longitude}°E | 真太阳时 ${result.t_year}年${result.t_month}月${result.t_day}日 ${String(result.t_hour).padStart(2,"0")}:${String(result.t_min).padStart(2,"0")} (JD ${result.jd.toFixed(5)})`;
+
+  const col = (tg, dz, label) =>
+    `<span class="pillar"><span class="tg">${tg}</span><span class="dz">${dz}</span><span class="col-label">${label}</span></span>`;
+  $("pillars").innerHTML =
+    col(result.year_tg, result.year_dz, "年柱")
+    + col(result.month_tg, result.month_dz, "月柱")
+    + col(result.day_tg, result.day_dz, "日柱")
+    + col(result.hour_tg, result.hour_dz, "时柱");
+
+  $("master").innerHTML =
+    `核心日主：<strong>【${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]} · ${ENGINE.YIN_YANG[result.ri_zhu]}】</strong>`;
+
+  $("status-chip").innerHTML = `<span class="chip status">${report.power_status}</span>`;
+
+  const order = ["木","火","土","金","水"];
+  $("bars").innerHTML = order.map(wx => {
+    const n = report.elements_count[wx];
+    const pct = Math.round(n / 8 * 100);
+    return `<div class="bar-row">
+      <span class="bar-label" style="color:${WX_HEX[wx]}">${wx}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${WX_HEX[wx]}"></div></div>
+      <span style="width:24px;font-size:13px;color:var(--muted)">${n}</span>
+    </div>`;
+  }).join("");
+
+  const d = report.detail;
+  const ctx = { "木":{r:109,g:189,b:109}, "火":{r:224,g:101,b:90}, "土":{r:217,g:169,b:92}, "金":{r:216,g:211,b:196}, "水":{r:90,g:155,b:217} }[report.me_x];
+  const glow = `rgba(${ctx.r},${ctx.g},${ctx.b},0.10)`;
+  $("details").innerHTML =
+    `<h3>格局详解 · <span style="color:var(--gold)">${d["名称"]}</span></h3>
+     <div class="detail-block" style="border-color:rgba(${ctx.r},${ctx.g},${ctx.b},0.35);background:${glow}">
+       <div class="k">1 · 格局生克路径</div><div class="v">${d["生克路径"]}</div>
+     </div>
+     <div class="detail-block"><div class="k">2 · 性格双重拆解</div><div class="v">${d["性格双重拆解"]}</div></div>
+     <div class="detail-block"><div class="k">3 · 事业天花板方向</div><div class="v">${d["事业天花板"]}</div></div>
+     <div class="detail-block"><div class="k">4 · 核心解局思路</div><div class="v">${d["核心用神解法"]}</div></div>`;
+}
+
+$("province").addEventListener("change", function () {
+  $("lng-field").style.display = (this.value === "__custom__") ? "flex" : "none";
+});
+
+$("submit").addEventListener("click", function () {
+  clearError();
+  const year = parseInt($("year").value, 10);
+  const month = parseInt($("month").value, 10);
+  const day = parseInt($("day").value, 10);
+  const hour = parseInt($("hour").value, 10);
+  const minute = parseInt($("minute").value, 10);
+  const time_type = parseInt(document.querySelector('input[name="time_type"]:checked').value, 10);
+
+  if (isNaN(year) || year === 0) { showError("❌ 错误：历史上不存在公元 0 年！请输入 1 或 -1 等非零年份。"); $("result").style.display = "none"; return; }
+  if (isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) { showError("❌ 请完整填写年份、月、日、时、分。"); return; }
+  if (!ENGINE.is_valid_date(year, month, day)) { showError("❌ 历法校验失败：该日期在历史时间轴上不存在！"); $("result").style.display = "none"; return; }
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) { showError("❌ 时间不合法：小时 0-23，分钟 0-59。"); return; }
+
+  let longitude;
+  const prov = $("province").value;
+  if (prov === "__custom__") {
+    longitude = parseFloat($("longitude").value);
+    if (isNaN(longitude) || longitude < -180 || longitude > 180) { showError("❌ 经度数字超出物理边界 (-180.0 到 180.0)。"); return; }
+  } else {
+    longitude = ENGINE.PROVINCE_FALLBACK_LNG[prov];
+  }
+
+  const result = ENGINE.execute_global_fortune_engine(year, month, day, hour, minute, longitude, time_type);
+  const report = ENGINE.generate_report(result);
+  renderResult(result, report);
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+</script>
+</body>
+</html>
