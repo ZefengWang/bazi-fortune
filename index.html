@@ -138,6 +138,12 @@
   .detail-block .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; font-size: 14px; }
   .detail-block .v { color: var(--text); font-size: 14.5px; }
 
+  /* 白话解读卡片 */
+  .plain-card { display: flex; flex-direction: column; gap: 10px; }
+  .plain-item { background: linear-gradient(135deg, rgba(232,195,122,0.10), rgba(232,195,122,0.03)); border: 1px solid rgba(232,195,122,0.28); border-radius: 12px; padding: 12px 14px; }
+  .plain-item .plain-tag { display: inline-block; color: #241a05; background: linear-gradient(180deg, var(--gold-2), var(--gold)); font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 10px; margin-bottom: 6px; }
+  .plain-item .plain-body { color: var(--text); font-size: 14.5px; line-height: 1.8; }
+
   .qi-yun { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
   .qi-yun b { color: var(--gold-2); }
   .dayun-table { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
@@ -302,6 +308,8 @@
       <div class="master" id="master"></div>
     </div>
 
+    <div class="section" id="plain-summary"></div>
+
     <div class="section">
       <h3>五行能量状态（加权）</h3>
       <div class="chips" id="status-chip"></div>
@@ -349,8 +357,8 @@
   </footer>
 </div>
 
-<script src="cities-data.js?v=3"></script>
-<script src="engine.js?v=3"></script>
+<script src="cities-data.js?v=4"></script>
+<script src="engine.js?v=4"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -528,6 +536,58 @@ function buildMarriageCareerHtml(result, report) {
      </div>`;
 }
 
+/* 把喜用神方向翻译成大白话 */
+function plainYongShen(yong) {
+  if (!yong) return "顺势而为";
+  if (yong.indexOf("官杀") >= 0) return "适合被管束、有压力、有规则的环境，越有挑战越能发挥";
+  if (yong.indexOf("食伤") >= 0) return "适合发挥才华、表达自我、靠本事吃饭";
+  if (yong.indexOf("财") >= 0) return "适合求财、经营、务实赚钱的路子";
+  if (yong.indexOf("印") >= 0) return "适合学习、进修、靠知识和贵人相助";
+  if (yong.indexOf("比劫") >= 0) return "适合靠朋友、团队、自己打拼";
+  return "顺势而为";
+}
+
+/* 白话解读：把专业排盘结果翻译成普通人看得懂的话 */
+function buildPlainSummary(result, report) {
+  const gender = document.getElementById("gender").value || "male";
+  const genderTxt = gender === "male" ? "他" : "她";
+  const tc = ENGINE.TIANGAN_CHARACTER[result.ri_zhu];
+  const mc = ENGINE.computeMarriageAndCareer(result, report, gender);
+  const dy = ENGINE.computeDayunAndLiuNian(result, report, gender);
+  const m = mc.marriage, c = mc.career;
+
+  // 性格白话
+  const character = tc ? tc["性格"] : "性格特质需结合全盘判断。";
+
+  // 事业白话
+  const careerPlain = `${c.careerType}。${c.careerAnalysis.replace(/（\d+ 处）/, "")}`;
+
+  // 婚姻白话
+  const marriagePlain = `${m.spouseFate}${m.palaceTxt}${m.spouseHelp}`;
+
+  // 大运吉凶统计
+  let good = 0, bad = 0;
+  dy.dayun.forEach(x => { if (x.luck === "吉") good++; else if (x.luck === "凶") bad++; });
+  const luckTxt = good > bad
+    ? `一生大运以吉运为主（${good} 步吉、${bad} 步凶），整体运势向上，把握好运能事半功倍。`
+    : (bad > good
+      ? `一生大运凶运偏多（${good} 步吉、${bad} 步凶），需稳扎稳打，逆境中蓄力，等待转运。`
+      : `一生大运吉凶参半（${good} 步吉、${bad} 步凶），起伏中见机遇，关键在于顺势而为。`);
+
+  // 喜用神白话
+  const yongPlain = plainYongShen(report.yong_shen);
+
+  $("plain-summary").innerHTML =
+    `<h3>白话解读 · 一图看懂你的命</h3>
+     <div class="plain-card">
+       <div class="plain-item"><span class="plain-tag">你是什么样的人</span><div class="plain-body">${character}</div></div>
+       <div class="plain-item"><span class="plain-tag">适合做什么</span><div class="plain-body">${careerPlain}</div></div>
+       <div class="plain-item"><span class="plain-tag">感情婚姻</span><div class="plain-body">${marriagePlain}</div></div>
+       <div class="plain-item"><span class="plain-tag">一生运势</span><div class="plain-body">${luckTxt}</div></div>
+       <div class="plain-item"><span class="plain-tag">开运方向</span><div class="plain-body">${yongPlain}。多往这个方向努力，运势会更顺。</div></div>
+     </div>`;
+}
+
 function renderResult(result, report, loc) {
   _lastResult = result; _lastReport = report; _lastLoc = loc;
   $("result").style.display = "block";
@@ -548,6 +608,9 @@ function renderResult(result, report, loc) {
     `核心日主：<strong>【${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]} · ${ENGINE.YIN_YANG[result.ri_zhu]}】</strong>　喜用神方向：<strong>${report.yong_shen}</strong>`;
 
   $("status-chip").innerHTML = `<span class="chip status">${report.power_status}</span>`;
+
+  // 白话解读（放在最前面，让用户先看懂）
+  buildPlainSummary(result, report);
 
   // 五行加权条形图
   const order = ["木","火","土","金","水"];
