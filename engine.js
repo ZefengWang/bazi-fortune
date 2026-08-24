@@ -662,6 +662,116 @@ function computeDayunAndLiuNian(result, bz_report, gender) {
   return { qi_yun_age, qi_yun_days, qi_yun_date, dayun, forward };
 }
 
+/* 判断某十神是否属于喜用神 */
+function isYongShen(ss, yong) {
+  if (!yong) return false;
+  if (yong.indexOf("官杀") >= 0 && (ss === "正官" || ss === "七杀")) return true;
+  if (yong.indexOf("食伤") >= 0 && (ss === "食神" || ss === "伤官")) return true;
+  if (yong.indexOf("财") >= 0 && (ss === "正财" || ss === "偏财")) return true;
+  if (yong.indexOf("印") >= 0 && (ss === "正印" || ss === "偏印")) return true;
+  if (yong.indexOf("比劫") >= 0 && (ss === "比肩" || ss === "劫财")) return true;
+  return false;
+}
+
+/* 婚姻与事业分析
+ * 婚姻：男命以正财为妻、偏财为偏缘；女命以正官为夫、七杀为偏缘。
+ *       日支为婚姻宫，看配偶星旺衰、婚姻宫是否被冲、配偶星是否喜用。
+ * 事业：统计命局官杀/财/食伤/印/比劫五组十神力量，取最强者为事业主导星，
+ *       结合格局与喜用神给出事业类型与建议。
+ */
+function computeMarriageAndCareer(result, report, gender) {
+  const ri_zhu = result.ri_zhu;
+  const is_male = gender === "male";
+  const spouseMain = is_male ? "正财" : "正官";
+  const spouseSide = is_male ? "偏财" : "七杀";
+  const spouseStars = [spouseMain, spouseSide];
+
+  // 统计命局十神分布（天干 + 地支藏干）
+  const stems = [result.year_tg, result.month_tg, result.hour_tg];
+  const branches = [result.year_dz, result.month_dz, result.day_dz, result.hour_dz];
+  const counts = { "比肩":0,"劫财":0,"正印":0,"偏印":0,"食神":0,"伤官":0,"正官":0,"七杀":0,"正财":0,"偏财":0 };
+  let spouseCount = 0, spouseInStem = 0;
+  stems.forEach(s => {
+    const ss = get_shishen_relation(ri_zhu, s);
+    counts[ss]++;
+    if (spouseStars.includes(ss)) { spouseCount++; spouseInStem++; }
+  });
+  branches.forEach(bz => {
+    HIDDEN_STEMS[bz].forEach(s => {
+      const ss = get_shishen_relation(ri_zhu, s);
+      counts[ss]++;
+      if (spouseStars.includes(ss)) spouseCount++;
+    });
+  });
+
+  // 婚姻宫 = 日支；是否被其他地支相冲
+  const palace = result.day_dz;
+  const palaceRelation = get_shishen_relation(ri_zhu, primaryHiddenStem(palace));
+  const CHONG = { "子":"午","午":"子","丑":"未","未":"丑","寅":"申","申":"寅","卯":"酉","酉":"卯","辰":"戌","戌":"辰","巳":"亥","亥":"巳" };
+  const chonged = branches.some(bz => bz === CHONG[palace]);
+  const yong = (report && report.yong_shen) || "";
+  const spouseIsYong = isYongShen(spouseMain, yong) || isYongShen(spouseSide, yong);
+
+  // 婚姻结论
+  let spouseFate, palaceTxt, spouseHelp;
+  if (spouseCount >= 3) spouseFate = `配偶星（${spouseMain}）在命局中出现 ${spouseCount} 处，力量旺盛，异性缘分深厚，婚缘较早，一生感情机会多。`;
+  else if (spouseCount === 2) spouseFate = `配偶星（${spouseMain}）出现 ${spouseCount} 处，力量适中，婚缘正常，宜在适龄阶段主动把握良缘。`;
+  else if (spouseCount === 1) spouseFate = `配偶星（${spouseMain}）仅出现 ${spouseCount} 处，力量偏弱，婚缘较淡，宜扩大社交圈、主动争取，晚婚更利。`;
+  else spouseFate = `配偶星（${spouseMain}）在命局中不显，婚缘迟来，宜晚婚，婚后感情需用心经营。`;
+
+  if (chonged) palaceTxt = `婚姻宫（日支${palace}）被其他地支相冲，感情易有波折与变动，婚后需多包容、多沟通，避免意气用事。`;
+  else if (spouseStars.includes(palaceRelation)) palaceTxt = `婚姻宫（日支${palace}）坐${palaceRelation}，为配偶星入宫，夫妻感情深厚，婚姻基础稳固。`;
+  else palaceTxt = `婚姻宫（日支${palace}）安稳无冲，婚姻基础稳固，感情发展平顺。`;
+
+  if (spouseIsYong) spouseHelp = `配偶星为命局喜用神，婚后得配偶助力，${is_male ? "旺妻" : "旺夫"}，夫妻同心则家业兴旺。`;
+  else spouseHelp = `配偶星为命局忌神，婚后需注意磨合，多体谅对方，共同经营方能长久。`;
+
+  // 事业分析：五组十神力量
+  const group = {
+    "官杀": counts["正官"] + counts["七杀"],
+    "财": counts["正财"] + counts["偏财"],
+    "食伤": counts["食神"] + counts["伤官"],
+    "印": counts["正印"] + counts["偏印"],
+    "比劫": counts["比肩"] + counts["劫财"]
+  };
+  const sorted = Object.keys(group).sort((a, b) => group[b] - group[a]);
+  const main = sorted[0];
+  const mainCount = group[main];
+
+  let careerType, careerAnalysis, careerAdvice;
+  switch (main) {
+    case "官杀":
+      careerType = "管理权力型";
+      careerAnalysis = `命局官杀星最旺（${mainCount} 处），事业心强、有领导欲与责任感，适合体制内、企业管理、执法等需要权威与规则的领域。`;
+      careerAdvice = `官星喜印相生则权柄稳固，宜走稳健晋升路线；若身弱官杀过旺，需以印化杀、以食制杀，避免压力过大。`;
+      break;
+    case "财":
+      careerType = "财富经营型";
+      careerAnalysis = `命局财星最旺（${mainCount} 处），商业嗅觉敏锐、务实重利，适合经商、金融、贸易等财富积累型领域。`;
+      careerAdvice = `身强财旺则富贵可期，宜大胆开拓；身弱财多则需以印比生扶，先稳根基再图发展，忌贪多求快。`;
+      break;
+    case "食伤":
+      careerType = "才华技术型";
+      careerAnalysis = `命局食伤星最旺（${mainCount} 处），才华横溢、创造力强，适合技术、创意、演艺、自媒体等靠才华变现的领域。`;
+      careerAdvice = `食伤生财则才华可源源变现，宜专注打磨核心技能；忌伤官见官，避免锋芒过露招惹是非。`;
+      break;
+    case "印":
+      careerType = "学术文化型";
+      careerAnalysis = `命局印星最旺（${mainCount} 处），好学深思、重名誉，适合教育、科研、文化、医疗等靠专业壁垒与声誉立足的领域。`;
+      careerAdvice = `印星为用则利学业功名，宜深耕专业、积累口碑；忌印重懒散，需以财制印、以食伤泄秀，保持行动力。`;
+      break;
+    default:
+      careerType = "竞争合伙型";
+      careerAnalysis = `命局比劫星最旺（${mainCount} 处），独立自主、竞争意识强，适合创业、销售、竞技等需要个人硬实力的领域。`;
+      careerAdvice = `比劫旺者宜独立开拓，合伙需谨慎分利；身弱则喜比劫帮扶，可借团队之力共同发展。`;
+  }
+
+  return {
+    marriage: { spouseMain, spouseSide, spouseCount, spouseInStem, palace, palaceRelation, chonged, spouseIsYong, spouseFate, palaceTxt, spouseHelp },
+    career: { main, mainCount, careerType, careerAnalysis, careerAdvice, monthRelation: report ? report.month_relation : "" }
+  };
+}
+
 /* 流年干支：以立春换年（与年柱口径一致） */
 function liunianGanzhi(birth_info, year) {
   const ly = birth_info && birth_info.bz_year !== undefined ? year : year;
@@ -782,6 +892,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
+    computeMarriageAndCareer, isYongShen,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER
   };
@@ -792,6 +903,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
+    computeMarriageAndCareer, isYongShen,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER
   };

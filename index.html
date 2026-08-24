@@ -325,6 +325,8 @@
 
     <div class="section" id="shishen-detail"></div>
 
+    <div class="section" id="marriage-career"></div>
+
     <div class="section">
       <h3>大运排盘</h3>
       <div class="qi-yun" id="qi-yun"></div>
@@ -509,6 +511,23 @@ function buildLiuNianHtml(result, report, year) {
   </div>`;
 }
 
+function buildMarriageCareerHtml(result, report) {
+  const gender = document.getElementById("gender").value || "male";
+  const mc = ENGINE.computeMarriageAndCareer(result, report, gender);
+  const m = mc.marriage, c = mc.career;
+  const genderTxt = gender === "male" ? "男命" : "女命";
+  $("marriage-career").innerHTML =
+    `<h3>婚姻与事业</h3>
+     <div class="detail-block">
+       <div class="k">婚姻分析 · ${genderTxt} · 配偶星【${m.spouseMain}】</div>
+       <div class="v">${m.spouseFate}<br><br>${m.palaceTxt}<br><br>${m.spouseHelp}</div>
+     </div>
+     <div class="detail-block">
+       <div class="k">事业分析 · ${c.careerType}</div>
+       <div class="v">${c.careerAnalysis}<br><br>${c.careerAdvice}</div>
+     </div>`;
+}
+
 function renderResult(result, report, loc) {
   _lastResult = result; _lastReport = report; _lastLoc = loc;
   $("result").style.display = "block";
@@ -642,6 +661,9 @@ function renderResult(result, report, loc) {
         <div class="v"><b>含义</b>：${sd["含义"]}<br><b>性格</b>：${sd["性格"]}<br><b>事业</b>：${sd["事业"]}<br><b>喜忌</b>：${sd["喜忌"]}</div>
       </div>`;
     }).join("");
+
+  // 婚姻与事业
+  buildMarriageCareerHtml(result, report);
 
   // 大运 + 流年（默认流年预填出生当年）
   buildDayunHtml(result, report);
