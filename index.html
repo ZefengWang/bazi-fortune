@@ -274,8 +274,8 @@
   </footer>
 </div>
 
-<script src="cities-data.js"></script>
-<script src="engine.js"></script>
+<script src="cities-data.js?v=2"></script>
+<script src="engine.js?v=2"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -308,7 +308,7 @@ function fillSelect(sel, items, labelFn) {
 
 function renderProvinces() {
   fillSelect($("province"), CITY_DB.china.provinces, (p) => p.name);
-  onChange();
+  renderChinaCities(); // 用当前（默认）省份填充城市，避免初始城市下拉为空
 }
 function renderCountryCities(countryName) {
   const c = CITY_DB.global.find(x => x.name === countryName);
