@@ -415,13 +415,25 @@
             <label>分钟</label>
             <input type="number" id="hh-a-minute" min="0" max="59" value="0">
           </div>
-          <div class="field">
-            <label>经度（东正西负）</label>
-            <input type="number" id="hh-a-lng" step="any" value="116.4">
+          <div class="field full">
+            <label for="hh-a-country">出生国家 / 地区</label>
+            <select id="hh-a-country"></select>
           </div>
-          <div class="field">
-            <label>IANA 时区</label>
-            <input type="text" id="hh-a-tz" value="Asia/Shanghai">
+          <div class="field" id="hh-a-province-field">
+            <label for="hh-a-province">省份 / 直辖市</label>
+            <select id="hh-a-province"></select>
+          </div>
+          <div class="field" id="hh-a-city-field">
+            <label for="hh-a-city">城市</label>
+            <select id="hh-a-city"></select>
+          </div>
+          <div class="field" id="hh-a-custom-tz-field" style="display:none;">
+            <label for="hh-a-custom-tz">IANA 时区</label>
+            <input type="text" id="hh-a-custom-tz" value="Asia/Shanghai">
+          </div>
+          <div class="field" id="hh-a-custom-lng-field" style="display:none;">
+            <label for="hh-a-custom-lng">精确经度（东正西负）</label>
+            <input type="number" id="hh-a-custom-lng" step="any" value="116.4">
           </div>
         </div>
       </div>
@@ -452,13 +464,25 @@
             <label>分钟</label>
             <input type="number" id="hh-b-minute" min="0" max="59" value="0">
           </div>
-          <div class="field">
-            <label>经度（东正西负）</label>
-            <input type="number" id="hh-b-lng" step="any" value="116.4">
+          <div class="field full">
+            <label for="hh-b-country">出生国家 / 地区</label>
+            <select id="hh-b-country"></select>
           </div>
-          <div class="field">
-            <label>IANA 时区</label>
-            <input type="text" id="hh-b-tz" value="Asia/Shanghai">
+          <div class="field" id="hh-b-province-field">
+            <label for="hh-b-province">省份 / 直辖市</label>
+            <select id="hh-b-province"></select>
+          </div>
+          <div class="field" id="hh-b-city-field">
+            <label for="hh-b-city">城市</label>
+            <select id="hh-b-city"></select>
+          </div>
+          <div class="field" id="hh-b-custom-tz-field" style="display:none;">
+            <label for="hh-b-custom-tz">IANA 时区</label>
+            <input type="text" id="hh-b-custom-tz" value="Asia/Shanghai">
+          </div>
+          <div class="field" id="hh-b-custom-lng-field" style="display:none;">
+            <label for="hh-b-custom-lng">精确经度（东正西负）</label>
+            <input type="number" id="hh-b-custom-lng" step="any" value="116.4">
           </div>
         </div>
       </div>
@@ -892,12 +916,69 @@ $("submit").addEventListener("click", function () {
 /* ---------- 八字合婚 ---------- */
 const SX = { "子":"鼠","丑":"牛","寅":"虎","卯":"兔","辰":"龙","巳":"蛇","午":"马","未":"羊","申":"猴","酉":"鸡","戌":"狗","亥":"猪" };
 
+/* 合婚区三级联动：国家 → 省 → 城市（参数化复用主区 CITY_DB 逻辑） */
+function hehunRenderProvinces(prefix) {
+  fillSelect($(prefix + "-province"), CITY_DB.china.provinces, (p) => p.name);
+  hehunRenderChinaCities(prefix);
+}
+function hehunRenderChinaCities(prefix) {
+  const p = CITY_DB.china.provinces.find(x => x.name === $(prefix + "-province").value);
+  fillSelect($(prefix + "-city"), p.cities, (ci) => ci.name);
+}
+function hehunRenderCountryCities(prefix) {
+  const c = CITY_DB.global.find(x => x.name === $(prefix + "-country").value);
+  fillSelect($(prefix + "-city"), c.cities, (ci) => `${ci.name} (${ci.tz})`);
+}
+function hehunOnCountryChange(prefix) {
+  const v = $(prefix + "-country").value;
+  const provField = $(prefix + "-province-field"), cityField = $(prefix + "-city-field");
+  const tzField = $(prefix + "-custom-tz-field"), lngField = $(prefix + "-custom-lng-field");
+  if (v === "china") {
+    provField.style.display = "flex"; cityField.style.display = "flex";
+    tzField.style.display = "none"; lngField.style.display = "none";
+    hehunRenderProvinces(prefix);
+  } else if (v === "__custom__") {
+    provField.style.display = "none"; cityField.style.display = "none";
+    tzField.style.display = "flex"; lngField.style.display = "flex";
+  } else {
+    provField.style.display = "none"; cityField.style.display = "flex";
+    tzField.style.display = "none"; lngField.style.display = "none";
+    hehunRenderCountryCities(prefix);
+  }
+}
+function initHehunLocation(prefix) {
+  const countrySel = $(prefix + "-country");
+  const add = (val, txt) => { const o = document.createElement("option"); o.value = val; o.textContent = txt; countrySel.appendChild(o); };
+  add("china", "中国 🇨🇳（默认北京时间）");
+  CITY_DB.global.forEach(c => add(c.name, c.name));
+  add("__custom__", "其他 / 自定义时区与经度");
+  hehunOnCountryChange(prefix);
+}
+function resolveHehunLocation(prefix) {
+  const v = $(prefix + "-country").value;
+  if (v === "__custom__") {
+    const tz = ($(prefix + "-custom-tz").value || "").trim() || "Asia/Shanghai";
+    const lng = parseFloat($(prefix + "-custom-lng").value);
+    if (isNaN(lng) || lng < -180 || lng > 180) return { error: "❌ 经度超出物理边界 (-180 ~ 180)。" };
+    return { lng, tz };
+  }
+  let city;
+  if (v === "china") {
+    const p = CITY_DB.china.provinces.find(x => x.name === $(prefix + "-province").value);
+    city = p.cities.find(c => c.name === $(prefix + "-city").value);
+    return { lng: city.lng, tz: "Asia/Shanghai" };
+  }
+  const c = CITY_DB.global.find(x => x.name === v);
+  city = c.cities.find(x => x.name === $(prefix + "-city").value);
+  return { lng: city.lng, tz: city.tz };
+}
+
 function readHehunSide(prefix) {
   const iv = id => parseInt(document.getElementById(prefix + id).value, 10);
-  const lng = parseFloat(document.getElementById(prefix + "-lng").value);
-  const tz = (document.getElementById(prefix + "-tz").value || "").trim();
   const gender = document.getElementById(prefix + "-gender").value;
-  return { gender, year: iv("-year"), month: iv("-month"), day: iv("-day"), hour: iv("-hour"), minute: iv("-minute"), lng, tz };
+  const loc = resolveHehunLocation(prefix);
+  if (loc.error) return { gender, year: iv("-year"), month: iv("-month"), day: iv("-day"), hour: iv("-hour"), minute: iv("-minute"), lng: NaN, tz: "", error: loc.error };
+  return { gender, year: iv("-year"), month: iv("-month"), day: iv("-day"), hour: iv("-hour"), minute: iv("-minute"), lng: loc.lng, tz: loc.tz };
 }
 
 function validateHehunSide(side, name) {
@@ -980,6 +1061,8 @@ $("btn-hehun").addEventListener("click", function () {
   hehunClearError();
   try {
     const A = readHehunSide("hh-a"), B = readHehunSide("hh-b");
+    if (A.error) { hehunError("❌ 甲方：" + A.error.replace(/^❌\s*/, "")); return; }
+    if (B.error) { hehunError("❌ 乙方：" + B.error.replace(/^❌\s*/, "")); return; }
     const ea = validateHehunSide(A, "甲方"), eb = validateHehunSide(B, "乙方");
     if (ea) { hehunError("❌ " + ea); return; }
     if (eb) { hehunError("❌ " + eb); return; }
@@ -998,6 +1081,12 @@ $("btn-hehun").addEventListener("click", function () {
 });
 
 initLocations();
+initHehunLocation("hh-a");
+initHehunLocation("hh-b");
+["hh-a", "hh-b"].forEach(prefix => {
+  $(prefix + "-country").addEventListener("change", () => hehunOnCountryChange(prefix));
+  $(prefix + "-province").addEventListener("change", () => hehunRenderChinaCities(prefix));
+});
 </script>
 </body>
 </html>
