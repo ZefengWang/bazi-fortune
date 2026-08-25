@@ -360,7 +360,7 @@
 </div>
 
 <script src="cities-data.js?v=4"></script>
-<script src="engine.js?v=4"></script>
+<script src="engine.js?v=5"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -681,7 +681,7 @@ function renderResult(result, report, loc) {
   const maxEp = Math.max(...order5.map(wx => ep[wx]), 1);
   const sorted5 = order5.slice().sort((a, b) => ep[b] - ep[a]);
   const strongest = sorted5[0], weakest = sorted5[4];
-  const relTxt = { "木":"生我者（印）", "火":"我生者（食伤）", "土":"我克者（财）", "金":"克我者（官杀）", "水":"同我者（比劫）" };
+  const relTxt = ENGINE.elementShishenGroup(report.me_x);
   $("wuxing-detail").innerHTML =
     `<h3>五行能量详解</h3>
      <div class="detail-block">

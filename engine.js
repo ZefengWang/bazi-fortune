@@ -774,10 +774,10 @@ function computeMarriageAndCareer(result, report, gender) {
 
 /* 流年干支：以立春换年（与年柱口径一致） */
 function liunianGanzhi(birth_info, year) {
-  const ly = birth_info && birth_info.bz_year !== undefined ? year : year;
-  const li_chun = solarTermUtJd(year, 0);
-  const bz = birth_info && birth_info.utc_jd !== undefined && birth_info.utc_jd < li_chun
-    ? year - 1 : year;
+  // 流年干支由该公历年的立春决定，与出生时刻无关；直接以 year 作为干支基准年，
+  // 避免误用出生时刻去比未来流年立春而导致整体错位一年。
+  void birth_info; // 保留参数以兼容既有调用方，当前实现不再依赖出生时刻
+  const bz = year;
   const y_idx = (bz > 0) ? pymod(bz - 4, 60) : pymod(bz - 3, 60);
   return { gan: TIANGAN[y_idx % 10], zhi: DIZHI[y_idx % 12], year, bz };
 }
@@ -884,6 +884,25 @@ function generate_report(result) {
   };
 }
 
+/* 十神 → 相对日主的十神大类（用于五行能量详解·旺衰解读，动态、不写死） */
+const SHISHEN_GROUP = {
+  "比肩": "同我者（比劫）", "劫财": "同我者（比劫）",
+  "正印": "生我者（印）",   "偏印": "生我者（印）",
+  "食神": "我生者（食伤）", "伤官": "我生者（食伤）",
+  "正官": "克我者（官杀）", "七杀": "克我者（官杀）",
+  "正财": "我克者（财）",   "偏财": "我克者（财）"
+};
+
+/* 返回 木/火/土/金/水 → 相对日主 me_x 的十神大类（随日主变化，动态正确） */
+function elementShishenGroup(me_x) {
+  const rep = { "木": "甲", "火": "丙", "土": "戊", "金": "庚", "水": "壬" };
+  const out = {};
+  for (const wx of ELEMENT_ORDER) {
+    out[wx] = SHISHEN_GROUP[get_shishen_relation(rep[me_x], rep[wx])];
+  }
+  return out;
+}
+
 /* ---------------- 导出（浏览器 / Node 双端） ---------------- */
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -894,7 +913,7 @@ if (typeof module !== "undefined" && module.exports) {
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     computeMarriageAndCareer, isYongShen,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
-    SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER
+    SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };
 } else {
   window.BaziEngine = {
@@ -905,6 +924,6 @@ if (typeof module !== "undefined" && module.exports) {
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     computeMarriageAndCareer, isYongShen,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
-    SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER
+    SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };
 }
