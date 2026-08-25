@@ -1001,11 +1001,11 @@ function hehunWuxingText(rel, zdx, ydx) {
 /* 五行能量互补度的白话解析 */
 function hehunHubuText(hubu, topA, topB) {
   let s = `甲方最旺五行为「${topA.join("、")}」，乙方最旺五行为「${topB.join("、")}」。`;
-  if (hubu.complement >= 2) s += `双方五行强弱明显错位、彼此补足（互补 ${hubu.complement} 项），能各取所长、互相扶持，是相当理想的搭配。`;
+  if (hubu.identical) s += `双方五行分布完全一致、强弱趋同，亲和有余而同气过旺，缺少互补差异，需主动创造新鲜感与各自空间。`;
+  else if (hubu.complement >= 2) s += `双方五行强弱明显错位、彼此补足（互补 ${hubu.complement} 项），能各取所长、互相扶持，是相当理想的搭配。`;
   else if (hubu.complement === 1) s += `双方有 ${hubu.complement} 项五行互补，能起到一定的取长补短效果。`;
+  else if (hubu.overlap >= 2) s += `双方五行缺少互补，偏强的部分重叠（${hubu.overlap} 项同类趋同），性情相似但易各执己见，需互相包容理解。`;
   else s += `双方五行缺少互补，各自偏强的部分重叠，容易出现争夺或互相不理解。`;
-  if (hubu.conflict >= 2) s += `且有 ${hubu.conflict} 项同强同弱，需特别注意磨合经营。`;
-  else if (hubu.conflict === 1) s += `有 ${hubu.conflict} 项同强同弱，稍加注意即可。`;
   return s;
 }
 
@@ -1070,16 +1070,15 @@ function computeHehun(resA, repA, resB, repB) {
   const pa = repA.elements_power, pb = repB.elements_power;
   const suma = ELEMENT_ORDER.reduce((s, w) => s + (pa[w] || 0), 0) || 1;
   const sumb = ELEMENT_ORDER.reduce((s, w) => s + (pb[w] || 0), 0) || 1;
-  let complement = 0, conflict = 0;
+  let complement = 0, overlap = 0;             // overlap = 同类重合（同强或同弱），非冲突
   ELEMENT_ORDER.forEach(w => {
     const da = (pa[w] || 0) / suma, db = (pb[w] || 0) / sumb;
     const deva = da - 0.2, devb = db - 0.2;
     if ((deva > 0.05 && devb < -0.05) || (deva < -0.05 && devb > 0.05)) complement++;
-    else if ((deva > 0.05 && devb > 0.05) || (deva < -0.05 && devb < -0.05)) conflict++;
+    else if (Math.abs(deva) > 0.05 && Math.abs(devb) > 0.05 && (deva > 0) === (devb > 0)) overlap++;
   });
   let buScore = 4 + complement * 3;                    // 基础 4，每补 1 项 +3
-  if (conflict >= 2) buScore -= 2;
-  buScore = Math.max(0, Math.min(15, Math.round(buScore)));
+  buScore = Math.max(4, Math.min(15, Math.round(buScore)));  // 同类重合仅说明缺互补，按冲突折算造成相同八字误判，故下限保 4
 
   // —— ⑤ 喜用神互补 ——
   const yongA = yongWuxings(zdx, repA.strength.ratio);
@@ -1136,13 +1135,23 @@ function computeHehun(resA, repA, resB, repB) {
   else if (score >= 40) { level = "中下等婚"; verdict = "契合度偏低，冲克较多，需双方付出更多耐心与理解去经营。"; }
   else { level = "下等婚"; verdict = "冲克较重，感情易生波折，若同居共处需格外用心化解分歧。"; }
 
+  // 四柱完全相同（同一天同一时辰）：同性相求，专门文案，避免被通用档位"冲克"措辞误导
+  const identical = resA.year_tg  === resB.year_tg  && resA.year_dz  === resB.year_dz &&
+                    resA.month_tg === resB.month_tg && resA.month_dz === resB.month_dz &&
+                    resA.day_tg   === resB.day_tg   && resA.day_dz   === resB.day_dz &&
+                    resA.hour_tg  === resB.hour_tg  && resA.hour_dz  === resB.hour_dz;
+  if (identical) {
+    level = "中等婚";
+    verdict = "双方八字如出一辙，性情、三观与气场高度同频，天生气机相引，缘分极深、默契十足。但同气过旺而五行缺互补，宛如照镜自怜，易趋同固执、少差异调剂；若能以差异为贵、相互扩容，是可以长久相伴的一对。";
+  }
+
   // —— 详细白话解析 ——
   const analysis = {
     summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），六维综合 ${score} 分，判为「${level}」。${verdict}`,
     shengxiao: hehunZhiText(sxRel, zxz, yxz, "年支生肖"),
     rigan:    rgRel.type === "he" ? hehunWuheText(rgRel, tgA, tgB) : hehunWuxingText(rgRel, zdx, ydx),
     hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
-    hubu:     hehunHubuText({ complement, conflict }, topA, topB),
+    hubu:     hehunHubuText({ complement, overlap, identical }, topA, topB),
     yongshen: hehunYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB),
     geju:     gejuText
   };
@@ -1155,7 +1164,7 @@ function computeHehun(resA, repA, resB, repB) {
       shengxiao: { score: sxScore, rel: sxRel },
       rigan:    { score: rgScore, rel: rgRel },
       hunyin:   { score: hgScore, rel: hgRel },
-      hubu:     { score: buScore, complement, conflict },
+      hubu:     { score: buScore, complement, overlap },
       yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral },
       geju:     { score: gejuScore, pureA, pureB }
     }
