@@ -270,7 +270,7 @@
       <div class="field" id="custom-tz-field" style="display:none;">
         <label for="custom-tz">IANA 时区</label>
         <input type="text" id="custom-tz" placeholder="如 America/New_York" value="Asia/Shanghai">
-        <span class="hint">填 IANA 时区标识，浏览器自动处理夏令时</span>
+        <span class="hint">填 IANA 时区标识；若您输入的时间处于夏令时期间，请在下方的"夏令时"选项中选择"是"</span>
       </div>
       <div class="field" id="custom-lng-field" style="display:none;">
         <label for="custom-lng">精确经度（东正西负）</label>
@@ -452,7 +452,7 @@ function onChange() {
   if (loc.error) { info.style.display = "none"; return; }
   const lngTxt = `${Math.abs(loc.lng).toFixed(2)}°${loc.lng >= 0 ? "E" : "W"}`;
   info.style.display = "block";
-  info.innerHTML = `<b>${loc.label}</b>　经度 <b>${lngTxt}</b>（自动查得）　时区 <b>${loc.tz}</b>（浏览器自动处理夏令时）`;
+  info.innerHTML = `<b>${loc.label}</b>　经度 <b>${lngTxt}</b>（自动查得）　时区 <b>${loc.tz}</b>`;
 }
 
 $("country").addEventListener("change", onCountryChange);
@@ -685,10 +685,15 @@ function renderResult(result, report, loc) {
   $("wuxing-detail").innerHTML =
     `<h3>五行能量详解</h3>
      <div class="detail-block">
-       <div class="k">能量分布</div>
+       <div class="k">能量分布（加权）</div>
        <div class="v">${order5.map(wx =>
          `<span style="color:${WX_HEX[wx]};font-weight:700">${wx}</span> ${Math.round(ep[wx])}`).join("　·　")}
        </div>
+     </div>
+     <div class="detail-block">
+       <div class="k">八字个数（每个字记 1，不展开藏干）</div>
+       <div class="v">${order5.map(wx =>
+         `<span style="color:${WX_HEX[wx]};font-weight:700">${wx}</span> ${report.elements_count[wx]}`).join("　·　")}　<span style="color:var(--muted)">（合计 ${order5.reduce((s, x) => s + report.elements_count[x], 0)}）</span></div>
      </div>
      <div class="detail-block">
        <div class="k">旺衰解读</div>
