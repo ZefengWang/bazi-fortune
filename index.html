@@ -498,11 +498,11 @@
   </div>
 
   <div class="card" id="hezuo">
-    <h2>同事 / 合作伙伴契合度（学习演示）</h2>
-    <div class="hehun-note">输入双方出生信息，按①生肖合冲 ②日主生克（含天干五合） ③比劫互动 ④五行互补 ⑤喜用神互补 ⑥格局阴阳 六维综合评分。民俗文化内容，仅供娱乐参考，不构成任何合作或职业建议。</div>
+    <h2>事业合盘 · 合伙搭档</h2>
+    <div class="hehun-note">不看夫妻宫，专看两人共事时的助力与张力：谁适合主导、谁适合执行，利益边界与决策节奏是否合拍，信任哪里容易出问题。民俗文化内容，仅供娱乐参考，不构成任何合作或职业建议。</div>
     <div class="hehun-grid" id="hezuo-grid"></div>
     <div class="hehun-submit">
-      <button id="btn-hezuo">开始合作测算</button>
+      <button id="btn-hezuo">开始合盘测算</button>
     </div>
     <div class="error-msg" id="hezuo-error"></div>
     <div class="hehun-result" id="hezuo-result"></div>
@@ -1105,7 +1105,7 @@ initHehunLocation("hh-b");
   $(prefix + "-province").addEventListener("change", () => hehunRenderChinaCities(prefix));
 });
 
-/* ---------- 同事 / 合作伙伴契合度 ---------- */
+/* ---------- 事业合盘 · 合伙搭档 ---------- */
 /* 输入区 HTML 生成（复用合婚区参数化三级联动逻辑） */
 function partnerSideHTML(prefix, title, defaultGender, def) {
   const gMale = defaultGender === "male" ? "selected" : "";
@@ -1233,7 +1233,7 @@ function buildHezuoHtml(h, nameA, nameB) {
       <div class="ha-item"><span class="ha-tag">⑤ 喜用神</span>${h.analysis.yongshen}</div>
       <div class="ha-item"><span class="ha-tag">⑥ 格局</span>${h.analysis.geju}</div>
     </div>
-    <div class="hehun-disclaimer">⚠️ 合作契合度为民俗文化内容，无科学依据，评分仅供娱乐参考，不构成任何合作或职业建议。</div>`;
+    <div class="hehun-disclaimer">⚠️ 事业合盘为民俗文化内容，无科学依据，评分仅供娱乐参考，不构成任何合作或职业建议。</div>`;
 }
 
 $("hezuo-grid").innerHTML = partnerSideHTML("hz-a", "甲方", "male", { year: 1990, month: 6, day: 15, hour: 12 }) + partnerSideHTML("hz-b", "乙方", "female", { year: 1992, month: 9, day: 20, hour: 10 });
@@ -1263,7 +1263,7 @@ $("btn-hezuo").addEventListener("click", function () {
     $("hezuo-result").innerHTML = buildHezuoHtml(h, "甲方（" + gA + "）", "乙方（" + gB + "）");
     $("hezuo-result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
-    hezuoError("❌ 合作测算失败：" + (e && e.message ? e.message : e));
+    hezuoError("❌ 合盘测算失败：" + (e && e.message ? e.message : e));
   }
 });
 </script>

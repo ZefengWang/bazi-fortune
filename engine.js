@@ -1221,14 +1221,14 @@ function computeHehun(resA, repA, resB, repB) {
 }
 
 /* =====================================================================
- * 同事 / 合作伙伴契合度（六维）
+ * 事业合盘 · 合伙搭档（六维）
  *   ① 生肖合冲（年支）      —— 占比 10 分
  *   ② 日主生克·五合（日干） —— 占比 20 分
  *   ③ 比劫互动（合作核心）  —— 占比 25 分
  *   ④ 五行能量互补度        —— 占比 15 分
  *   ⑤ 喜用神互补度          —— 占比 20 分
  *   ⑥ 格局阴阳（纯阳/纯阴） —— 占比 10 分
- * 说明：合作契合度为传统民俗文化内容，无科学依据，评分仅供娱乐参考。
+ * 说明：事业合盘为传统民俗文化内容，无科学依据，评分仅供娱乐参考。
  * ===================================================================== */
 
 /* 生肖（年支）关系的合作语境白话解析 */
@@ -1298,7 +1298,7 @@ function hezuoYongText(dimY, topA, topB) {
   return `双方喜用神互补较弱，各自的强势之处并非对方所需，难以形成「补益」效应。`;
 }
 
-/* 合作契合度主函数：入参为双方的 execute 结果 + generate_report 结果 */
+/* 事业合盘主函数：入参为双方的 execute 结果 + generate_report 结果 */
 function computeHezuo(resA, repA, resB, repB) {
   const zdx = repA.me_x, ydx = repB.me_x;            // 双方日主五行
   const tgA = resA.day_tg, tgB = resB.day_tg;        // 双方日干
@@ -1396,11 +1396,11 @@ function computeHezuo(resA, repA, resB, repB) {
 
   const score = sxScore + rgScore + bjScore + buScore + yongScore + gejuScore;
   let level, verdict;
-  if (score >= 85) { level = "上等合作"; verdict = "黄金搭档，双方生肖、日主与比劫互动高度契合，五行互补，合作中能各展所长、互相成就。"; }
-  else if (score >= 70) { level = "中上等合作"; verdict = "良配搭档，契合度较高，分工明确、配合默契，只要权责清晰即可高效协作。"; }
-  else if (score >= 55) { level = "中等合作"; verdict = "一般搭档，合作中需多沟通磨合，把性格差异化为互补优势。"; }
-  else if (score >= 40) { level = "中下等合作"; verdict = "契合度偏低，合作中易有摩擦与利益分歧，需提前约定规则、保持耐心。"; }
-  else { level = "下等合作"; verdict = "冲克较重，合作易生冲突与内耗，若非必要不建议深度绑定。"; }
+  if (score >= 85) { level = "上等搭档"; verdict = "互补点突出：生肖、日主与比劫互动高度契合，五行互补，能各展所长、互相成就。建议明确分工、各守其位，把默契转化为稳定产出。"; }
+  else if (score >= 70) { level = "良好搭档"; verdict = "互补点：契合度较高，分工明确、配合默契。摩擦点：需留意权责边界。建议提前约定规则、保持信息同步，即可高效协作。"; }
+  else if (score >= 55) { level = "一般搭档"; verdict = "互补点：有一定配合基础。摩擦点：性格与节奏差异需磨合。建议多沟通、把差异化为互补优势，避免各执己见。"; }
+  else if (score >= 40) { level = "磨合搭档"; verdict = "摩擦点：契合度偏低，易有摩擦与利益分歧。建议务必提前约定权责与利益分配，保持耐心、降低预期。"; }
+  else { level = "冲突风险较高"; verdict = "摩擦点：冲克较重，合作易生冲突与内耗。建议若非必要不建议深度绑定；如必须合作，需书面约定规则并保持距离感。"; }
 
   // 四柱完全相同：专门文案，避免被通用档位"冲克"措辞误导
   const identical = resA.year_tg  === resB.year_tg  && resA.year_dz  === resB.year_dz &&
@@ -1408,13 +1408,13 @@ function computeHezuo(resA, repA, resB, repB) {
                     resA.day_tg   === resB.day_tg   && resA.day_dz   === resB.day_dz &&
                     resA.hour_tg  === resB.hour_tg  && resA.hour_dz  === resB.hour_dz;
   if (identical) {
-    level = "中等合作";
-    verdict = "双方八字如出一辙，思维方式与行事节奏高度同频，默契十足、沟通成本低。但同气过旺而五行缺互补，易趋同固执、缺乏制衡，合作中需明确分工、避免各自为政。";
+    level = "同频搭档";
+    verdict = "双方八字如出一辙，思维方式与行事节奏高度同频，默契十足、沟通成本低。摩擦点：同气过旺而五行缺互补，易趋同固执、缺乏制衡。建议：明确分工、避免各自为政，主动引入不同视角。";
   }
 
   // —— 详细白话解析 ——
   const analysis = {
-    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），六维综合 ${score} 分，判为「${level}」。${verdict}`,
+    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），六维综合 ${score} 分，属「${level}」。${verdict}`,
     shengxiao: hezuoZhiText(sxRel, zxz, yxz),
     rigan:    rgRel.type === "he" ? hezuoWuheText(rgRel, tgA, tgB) : hezuoWuxingText(rgRel, zdx, ydx),
     bijie:    hezuoBijieText(bjA, bjB, weakA, weakB, strongA, strongB, zdx, ydx),
