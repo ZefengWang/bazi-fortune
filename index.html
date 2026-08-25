@@ -90,13 +90,13 @@
   }
   .location-info b { color: var(--gold); }
 
-  button#submit {
+  button#submit, button#btn-hehun {
     margin-top: 20px; width: 100%; padding: 14px; font-size: 16px; font-weight: 700; letter-spacing: 2px;
     color: #241a05; background: linear-gradient(180deg, var(--gold-2), var(--gold));
     border: none; border-radius: 10px; cursor: pointer; transition: transform .15s, filter .2s; font-family: inherit;
   }
-  button#submit:hover { filter: brightness(1.06); transform: translateY(-1px); }
-  button#submit:active { transform: translateY(0); }
+  button#submit:hover, button#btn-hehun:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  button#submit:active, button#btn-hehun:active { transform: translateY(0); }
 
   .error-msg { display: none; margin-top: 14px; padding: 12px 16px; background: rgba(224,101,90,0.12); border: 1px solid rgba(224,101,90,0.5); border-radius: 8px; color: #f0b8b1; font-size: 14px; }
 
@@ -167,6 +167,30 @@
   .liunian-card .k { color: var(--gold); font-weight: 700; margin-bottom: 6px; }
   .liunian-card .v { margin-top: 6px; }
 
+  /* 八字合婚 */
+  .hehun-note { color: var(--muted); font-size: 13px; margin: -6px 0 18px; }
+  .hehun-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .hehun-side { background: rgba(0,0,0,0.18); border: 1px solid var(--panel-border); border-radius: 12px; padding: 16px; }
+  .hehun-side h3 { font-size: 15px; color: var(--gold-2); margin-bottom: 14px; border-left: 3px solid var(--gold); padding-left: 10px; }
+  .hehun-side .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .hehun-submit { margin-top: 18px; }
+  .hehun-result { margin-top: 18px; }
+  .hehun-score-banner { display: flex; align-items: center; gap: 18px; background: linear-gradient(135deg, rgba(232,195,122,0.12), rgba(232,195,122,0.03)); border: 1px solid rgba(232,195,122,0.32); border-radius: 14px; padding: 18px 20px; flex-wrap: wrap; }
+  .hehun-score-num { font-size: 46px; font-weight: 800; line-height: 1; background: linear-gradient(180deg, var(--gold-2), var(--gold)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .hehun-score-meta { flex: 1; min-width: 190px; }
+  .hehun-score-meta .lv { font-size: 20px; font-weight: 700; color: var(--gold-2); }
+  .hehun-score-meta .vd { font-size: 14px; color: var(--text); margin-top: 6px; }
+  .hehun-dims { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+  .hehun-dim { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px; }
+  .hehun-dim .dn { font-size: 13px; color: var(--gold); margin-bottom: 6px; }
+  .hehun-dim .ds { font-size: 22px; font-weight: 700; color: var(--text); }
+  .hehun-dim .dt { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .hehun-info { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hehun-person { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--text); }
+  .hehun-person .pn { font-weight: 700; color: var(--gold-2); margin-bottom: 6px; }
+  .hehun-person .pv { line-height: 1.9; }
+  .hehun-disclaimer { margin-top: 12px; font-size: 12.5px; color: #d9b7b1; }
+
   footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
   footer .warn { color: #f0b8b1; font-weight: 600; margin-top: 6px; }
 
@@ -174,6 +198,7 @@
     .wrap { padding: 20px 12px 48px; }
     .card { padding: 20px 16px; }
     .grid { grid-template-columns: repeat(2, 1fr); }
+    .hehun-grid, .hehun-info { grid-template-columns: 1fr; }
   }
   @media (max-width: 600px) {
     header h1 { font-size: 23px; letter-spacing: 1px; }
@@ -351,6 +376,92 @@
       </div>
       <div id="liunian-result"></div>
     </div>
+  </div>
+
+  <div class="card" id="hehun">
+    <h2>八字合婚（学习演示）</h2>
+    <div class="hehun-note">输入双方出生信息，按①生肖合冲 ②日主生克 ③婚姻宫合冲 ④五行互补 ⑤喜用神互补 五维综合评分。民俗文化内容，仅供娱乐参考，不构成任何婚恋建议。</div>
+    <div class="hehun-grid">
+      <div class="hehun-side">
+        <h3>甲方</h3>
+        <div class="grid">
+          <div class="field">
+            <label>性别</label>
+            <select id="hh-a-gender"><option value="male" selected>男</option><option value="female">女</option></select>
+          </div>
+          <div class="field">
+            <label>出生年份（公元）</label>
+            <input type="number" id="hh-a-year" placeholder="1990" value="1990">
+          </div>
+          <div class="field">
+            <label>月份</label>
+            <input type="number" id="hh-a-month" min="1" max="12" value="6">
+          </div>
+          <div class="field">
+            <label>日期</label>
+            <input type="number" id="hh-a-day" min="1" max="31" value="15">
+          </div>
+          <div class="field">
+            <label>小时（0-23）</label>
+            <input type="number" id="hh-a-hour" min="0" max="23" value="12">
+          </div>
+          <div class="field">
+            <label>分钟</label>
+            <input type="number" id="hh-a-minute" min="0" max="59" value="0">
+          </div>
+          <div class="field">
+            <label>经度（东正西负）</label>
+            <input type="number" id="hh-a-lng" step="any" value="116.4">
+          </div>
+          <div class="field">
+            <label>IANA 时区</label>
+            <input type="text" id="hh-a-tz" value="Asia/Shanghai">
+          </div>
+        </div>
+      </div>
+      <div class="hehun-side">
+        <h3>乙方</h3>
+        <div class="grid">
+          <div class="field">
+            <label>性别</label>
+            <select id="hh-b-gender"><option value="female" selected>女</option><option value="male">男</option></select>
+          </div>
+          <div class="field">
+            <label>出生年份（公元）</label>
+            <input type="number" id="hh-b-year" placeholder="1992" value="1992">
+          </div>
+          <div class="field">
+            <label>月份</label>
+            <input type="number" id="hh-b-month" min="1" max="12" value="8">
+          </div>
+          <div class="field">
+            <label>日期</label>
+            <input type="number" id="hh-b-day" min="1" max="31" value="20">
+          </div>
+          <div class="field">
+            <label>小时（0-23）</label>
+            <input type="number" id="hh-b-hour" min="0" max="23" value="9">
+          </div>
+          <div class="field">
+            <label>分钟</label>
+            <input type="number" id="hh-b-minute" min="0" max="59" value="0">
+          </div>
+          <div class="field">
+            <label>经度（东正西负）</label>
+            <input type="number" id="hh-b-lng" step="any" value="116.4">
+          </div>
+          <div class="field">
+            <label>IANA 时区</label>
+            <input type="text" id="hh-b-tz" value="Asia/Shanghai">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hehun-submit">
+      <button id="btn-hehun">开始合婚测算</button>
+    </div>
+    <div class="error-msg" id="hehun-error"></div>
+    <div class="hehun-result" id="hehun-result"></div>
   </div>
 
   <footer>
@@ -769,6 +880,94 @@ $("submit").addEventListener("click", function () {
     $("result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
     showError("❌ 排盘失败：" + (e && e.message ? e.message : e));
+  }
+});
+
+/* ---------- 八字合婚 ---------- */
+const SX = { "子":"鼠","丑":"牛","寅":"虎","卯":"兔","辰":"龙","巳":"蛇","午":"马","未":"羊","申":"猴","酉":"鸡","戌":"狗","亥":"猪" };
+
+function readHehunSide(prefix) {
+  const iv = id => parseInt(document.getElementById(prefix + id).value, 10);
+  const lng = parseFloat(document.getElementById(prefix + "-lng").value);
+  const tz = (document.getElementById(prefix + "-tz").value || "").trim();
+  const gender = document.getElementById(prefix + "-gender").value;
+  return { gender, year: iv("-year"), month: iv("-month"), day: iv("-day"), hour: iv("-hour"), minute: iv("-minute"), lng, tz };
+}
+
+function validateHehunSide(side, name) {
+  if (isNaN(side.year) || side.year === 0) return `${name}：请填写非零出生年份（历史上不存在公元 0 年）。`;
+  if (isNaN(side.month) || isNaN(side.day) || isNaN(side.hour) || isNaN(side.minute)) return `${name}：请完整填写年月日时分。`;
+  if (!ENGINE.is_valid_date(side.year, side.month, side.day)) return `${name}：该日期在历史时间轴上不存在。`;
+  if (side.hour < 0 || side.hour > 23 || side.minute < 0 || side.minute > 59) return `${name}：时间不合法（小时 0-23，分钟 0-59）。`;
+  if (isNaN(side.lng) || side.lng < -180 || side.lng > 180) return `${name}：经度超出物理边界 (-180 ~ 180)。`;
+  if (!side.tz) return `${name}：请填写 IANA 时区。`;
+  return null;
+}
+
+function hehunError(msg) { const el = $("hehun-error"); el.textContent = msg; el.style.display = "block"; }
+function hehunClearError() { $("hehun-error").style.display = "none"; }
+
+function buildHehunHtml(h, nameA, nameB) {
+  const dimCard = (title, d, desc) => `<div class="hehun-dim">
+    <div class="dn">${title}</div>
+    <div class="ds">${d.score} 分</div>
+    <div class="dt">${desc}</div>
+  </div>`;
+  const y = h.dims.yongshen;
+  let yongTxt;
+  if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
+  else if (y.aFoxiangB) yongTxt = "甲方能补乙方所需";
+  else if (y.bFoxiangA) yongTxt = "乙方能补甲方所需";
+  else yongTxt = "喜用神互补较弱";
+  const person = (label, p) => `<div class="hehun-person">
+    <div class="pn">${label}</div>
+    <div class="pv">
+      日主：<b>${p.ri_zhu}</b>（${p.me_x}）<br>
+      生肖：${p.year_zhi}${SX[p.year_zhi]}（年支）<br>
+      婚姻宫：${p.day_zhi}（日支）<br>
+      最旺五行：${p.top.join("、")}
+    </div>
+  </div>`;
+  return `
+    <div class="hehun-score-banner">
+      <div class="hehun-score-num">${h.score}</div>
+      <div class="hehun-score-meta">
+        <div class="lv">${h.level}</div>
+        <div class="vd">${h.verdict}</div>
+      </div>
+    </div>
+    <div class="hehun-dims">
+      ${dimCard("① 生肖合冲（25分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
+      ${dimCard("② 日主生克（20分）", h.dims.rigan, h.dims.rigan.rel.text)}
+      ${dimCard("③ 婚姻宫合冲（25分）", h.dims.hunyin, h.dims.hunyin.rel.text)}
+      ${dimCard("④ 五行互补（15分）", h.dims.hubu, `互补 ${h.dims.hubu.complement} 项 · 冲突 ${h.dims.hubu.conflict} 项`)}
+      ${dimCard("⑤ 喜用神互补（15分）", h.dims.yongshen, yongTxt)}
+    </div>
+    <div class="hehun-info">
+      ${person(nameA, h.a)}
+      ${person(nameB, h.b)}
+    </div>
+    <div class="hehun-disclaimer">⚠️ 合婚为民俗文化内容，无科学依据，评分仅供娱乐参考，不构成任何婚恋建议。</div>`;
+}
+
+$("btn-hehun").addEventListener("click", function () {
+  hehunClearError();
+  try {
+    const A = readHehunSide("hh-a"), B = readHehunSide("hh-b");
+    const ea = validateHehunSide(A, "甲方"), eb = validateHehunSide(B, "乙方");
+    if (ea) { hehunError("❌ " + ea); return; }
+    if (eb) { hehunError("❌ " + eb); return; }
+    const resA = ENGINE.execute_global_fortune_engine(A.year, A.month, A.day, A.hour, A.minute, A.lng, A.tz, 1, 0);
+    const resB = ENGINE.execute_global_fortune_engine(B.year, B.month, B.day, B.hour, B.minute, B.lng, B.tz, 1, 0);
+    const repA = ENGINE.generate_report(resA);
+    const repB = ENGINE.generate_report(resB);
+    const h = ENGINE.computeHehun(resA, repA, resB, repB);
+    const gA = A.gender === "male" ? "男方" : "女方";
+    const gB = B.gender === "male" ? "男方" : "女方";
+    $("hehun-result").innerHTML = buildHehunHtml(h, "甲方（" + gA + "）", "乙方（" + gB + "）");
+    $("hehun-result").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    hehunError("❌ 合婚测算失败：" + (e && e.message ? e.message : e));
   }
 });
 

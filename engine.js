@@ -903,6 +903,143 @@ function elementShishenGroup(me_x) {
   return out;
 }
 
+/* =====================================================================
+ * 9. 八字合婚（学习演示，仅供娱乐与研究，不构成任何婚恋建议）
+ * ---------------------------------------------------------------------
+ * 基于双方四柱的客观可计算指标综合评分，五个维度：
+ *   ① 年支（生肖）合冲      —— 占比 25 分
+ *   ② 日干（日主）五行生克  —— 占比 20 分
+ *   ③ 日支（婚姻宫）合冲    —— 占比 25 分
+ *   ④ 五行能量互补度        —— 占比 15 分
+ *   ⑤ 喜用神互补度          —— 占比 15 分
+ * 说明：合婚为传统民俗文化内容，无科学依据，评分仅供娱乐参考。
+ * ===================================================================== */
+
+/* 地支关系映射（双向） */
+const HE_COMBINE  = { "子":"丑","丑":"子","寅":"亥","亥":"寅","卯":"戌","戌":"卯","辰":"酉","酉":"辰","巳":"申","申":"巳","午":"未","未":"午" };   // 六合
+const HE_SANHE    = { "申":"子辰","子":"申辰","辰":"申子","寅":"午戌","午":"寅戌","戌":"寅午","巳":"酉丑","酉":"巳丑","丑":"巳酉","亥":"卯未","卯":"亥未","未":"亥卯" }; // 三合
+const HE_CLASH    = { "子":"午","午":"子","丑":"未","未":"丑","寅":"申","申":"寅","卯":"酉","酉":"卯","辰":"戌","戌":"辰","巳":"亥","亥":"巳" };   // 六冲
+const HE_HARM     = { "子":"未","未":"子","丑":"午","午":"丑","寅":"巳","巳":"寅","卯":"辰","辰":"卯","申":"亥","亥":"申","酉":"戌","戌":"酉" };   // 六害
+const HE_PUNISH   = { "寅":"巳","巳":"申","申":"寅","丑":"戌","戌":"未","未":"丑","子":"卯","卯":"子","辰":"辰","午":"午","酉":"酉","亥":"亥" };   // 相刑（含自刑）
+
+/* 五行生克（单向） */
+const HE_SHENG = { "木":"火", "火":"土", "土":"金", "金":"水", "水":"木" };  // 我生
+const HE_KE    = { "木":"土", "火":"金", "土":"水", "金":"木", "水":"火" };  // 我克
+
+/* 返回两支关系（a 相对 b），供生肖与婚姻宫共同使用 */
+function branchRelationHe(a, b) {
+  if (HE_COMBINE[a] === b) return { type: "liuhe",  label: "六合", good: true,  strong: true,  text: `${a}${b}为六合` };
+  if (HE_SANHE[a] && HE_SANHE[a].includes(b)) return { type: "sanhe", label: "三合", good: true, strong: false, text: `${a}${b}为三合` };
+  if (HE_CLASH[a] === b) return { type: "clash",  label: "六冲", good: false, strong: true,  text: `${a}${b}为六冲` };
+  if (HE_HARM[a] === b)  return { type: "harm",   label: "六害", good: false, strong: false, text: `${a}${b}为相害` };
+  if (HE_PUNISH[a] === b || HE_PUNISH[b] === a) return { type: "punish", label: "相刑", good: false, strong: false, text: `${a}${b}为相刑` };
+  return { type: "normal", label: "平和", good: null, strong: false, text: `${a}${b}无冲合` };
+}
+
+/* 返回两五行生克关系 */
+function wuxingRelationHe(xa, xb) {
+  if (xa === xb) return { type: "same", label: "比和", text: `${xa}${xb}同类` };
+  if (HE_SHENG[xa] === xb) return { type: "sheng", label: "相生", text: `${xa}生${xb}` };
+  if (HE_SHENG[xb] === xa) return { type: "sheng", label: "相生", text: `${xb}生${xa}` };
+  if (HE_KE[xa] === xb) return { type: "ke", label: "相克", text: `${xa}克${xb}` };
+  if (HE_KE[xb] === xa) return { type: "ke", label: "相克", text: `${xb}克${xa}` };
+  return { type: "normal", label: "平和", text: `${xa}${xb}` };
+}
+
+/* 返回某个命局的喜用（所需）五行集合 */
+function yongWuxings(me_x, ratio) {
+  if (ratio >= 0.55) {
+    // 身强：喜克泄耗 = 克我（官杀）、我生（食伤）、我克（财）
+    const keWo = ELEMENT_ORDER.find(w => HE_KE[w] === me_x);   // 克我者
+    const woSheng = HE_SHENG[me_x];                            // 我生者
+    const woKe = HE_KE[me_x];                                  // 我克者
+    return [keWo, woSheng, woKe];
+  }
+  if (ratio <= 0.45) {
+    // 身弱：喜生扶 = 生我（印）、同我（比劫）
+    const shengWo = parentElementOf(me_x);
+    return [shengWo, me_x];
+  }
+  return ELEMENT_ORDER.slice(); // 中和：喜流通
+}
+
+/* 返回命局最旺的两个五行（按加权能量降序） */
+function topWuxings(power) {
+  return ELEMENT_ORDER.slice().sort((a, b) => (power[b] || 0) - (power[a] || 0)).slice(0, 2);
+}
+
+/* 合婚主函数：入参为双方的 execute 结果 + generate_report 结果 */
+function computeHehun(resA, repA, resB, repB) {
+  const zdx = repA.me_x;               // 甲方日主五行
+  const ydx = repB.me_x;               // 乙方日主五行
+  const zxz = resA.year_dz;            // 甲方生肖（年支）
+  const yxz = resB.year_dz;            // 乙方生肖
+  const zhdz = resA.day_dz;            // 甲方婚姻宫（日支）
+  const yhdz = resB.day_dz;            // 乙方婚姻宫
+
+  // —— ① 生肖（年支）——
+  const sxRel = branchRelationHe(zxz, yxz);
+  const sxScore = sxRel.type === "liuhe" ? 25 : sxRel.type === "sanhe" ? 20 : sxRel.type === "normal" ? 12 : sxRel.type === "clash" ? 0 : 6;
+
+  // —— ② 日干（日主）五行生克 ——
+  const rgRel = wuxingRelationHe(zdx, ydx);
+  const rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 13 : 5;
+
+  // —— ③ 日支（婚姻宫）——
+  const hgRel = branchRelationHe(zhdz, yhdz);
+  const hgScore = hgRel.type === "liuhe" ? 25 : hgRel.type === "sanhe" ? 20 : hgRel.type === "normal" ? 12 : hgRel.type === "clash" ? 0 : 6;
+
+  // —— ④ 五行能量互补 ——
+  const pa = repA.elements_power, pb = repB.elements_power;
+  const suma = ELEMENT_ORDER.reduce((s, w) => s + (pa[w] || 0), 0) || 1;
+  const sumb = ELEMENT_ORDER.reduce((s, w) => s + (pb[w] || 0), 0) || 1;
+  let complement = 0, conflict = 0;
+  ELEMENT_ORDER.forEach(w => {
+    const da = (pa[w] || 0) / suma, db = (pb[w] || 0) / sumb;
+    const deva = da - 0.2, devb = db - 0.2;
+    if ((deva > 0.05 && devb < -0.05) || (deva < -0.05 && devb > 0.05)) complement++;
+    else if ((deva > 0.05 && devb > 0.05) || (deva < -0.05 && devb < -0.05)) conflict++;
+  });
+  let buScore = 4 + complement * 3;                    // 基础 4，每补 1 项 +3
+  if (conflict >= 2) buScore -= 2;
+  buScore = Math.max(0, Math.min(15, Math.round(buScore)));
+
+  // —— ⑤ 喜用神互补 ——
+  const yongA = yongWuxings(zdx, repA.strength.ratio);
+  const yongB = yongWuxings(ydx, repB.strength.ratio);
+  const topB = topWuxings(pb), topA = topWuxings(pa);
+  const aFoxiangB = yongB.some(w => topA[0] === w);     // 甲最旺 = 乙所需
+  const bFoxiangA = yongA.some(w => topB[0] === w);     // 乙最旺 = 甲所需
+  const aErxiangB = yongB.some(w => topA[1] === w);
+  const bErxiangA = yongA.some(w => topB[1] === w);
+  let yongScore;
+  if ((aFoxiangB && bFoxiangA)) yongScore = 15;         // 双向强互补
+  else if (aFoxiangB || bFoxiangA || (aErxiangB && bErxiangA)) yongScore = 10; // 单向或次强双向
+  else if (aErxiangB || bErxiangA) yongScore = 7;
+  else yongScore = 4;
+
+  const score = sxScore + rgScore + hgScore + buScore + yongScore;
+  let level, verdict;
+  if (score >= 85) { level = "上等婚"; verdict = "天作之合，双方生肖、日主与婚姻宫高度契合，五行互补，情感根基深厚。"; }
+  else if (score >= 70) { level = "中上等婚"; verdict = "良配，契合度较高，只要经营得当，感情生活可和谐美满。"; }
+  else if (score >= 55) { level = "中等婚"; verdict = "缘分一般，相处中需多包容磨合，把差异化为互补。"; }
+  else if (score >= 40) { level = "中下等婚"; verdict = "契合度偏低，冲克较多，需双方付出更多耐心与理解去经营。"; }
+  else { level = "下等婚"; verdict = "冲克较重，感情易生波折，若同居共处需格外用心化解分歧。"; }
+
+  return {
+    score, level, verdict,
+    a: { ri_zhu: resA.ri_zhu, me_x: zdx, year_zhi: zxz, day_zhi: zhdz, power: pa, top: topA, yong: yongA },
+    b: { ri_zhu: resB.ri_zhu, me_x: ydx, year_zhi: yxz, day_zhi: yhdz, power: pb, top: topB, yong: yongB },
+    dims: {
+      shengxiao: { score: sxScore, rel: sxRel },
+      rigan:    { score: rgScore, rel: rgRel },
+      hunyin:   { score: hgScore, rel: hgRel },
+      hubu:     { score: buScore, complement, conflict },
+      yongshen: { score: yongScore, aFoxiangB, bFoxiangA }
+    }
+  };
+}
+
 /* ---------------- 导出（浏览器 / Node 双端） ---------------- */
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -911,7 +1048,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
-    computeMarriageAndCareer, isYongShen,
+    computeMarriageAndCareer, isYongShen, computeHehun,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };
@@ -922,7 +1059,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
-    computeMarriageAndCareer, isYongShen,
+    computeMarriageAndCareer, isYongShen, computeHehun,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };
