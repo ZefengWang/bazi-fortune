@@ -738,6 +738,35 @@ function computeMarriageAndCareer(result, report, gender) {
   const main = sorted[0];
   const mainCount = group[main];
 
+  // 五行→现代行业（第 1 层：行业方向，参考主流"最旺五行定行业"）
+  const ELEMENT_INDUSTRY = {
+    "木": { dir: "成长、教育与生命力", inds: ["教育", "出版", "媒体", "时尚", "家具", "中医药", "环保", "健康养生", "文化文创", "产品设计"] },
+    "火": { dir: "能源、曝光与传播转化", inds: ["科技电子", "互联网软件", "演艺娱乐", "能源", "广告公关", "市场营销", "美容美发", "摄影传媒", "新媒体运营"] },
+    "土": { dir: "稳定、资源与项目管理", inds: ["房地产", "建筑施工", "土木工程", "矿业陶瓷", "保险", "人力资源", "农牧", "仓储物流", "咨询顾问", "项目管理"] },
+    "金": { dir: "精准、结构与价值计量", inds: ["金融银行", "证券投资", "法律司法", "军警安保", "汽车机械", "五金制造", "珠宝钟表", "外科牙科", "精密工程", "硬件科技"] },
+    "水": { dir: "流动、沟通与智慧", inds: ["贸易进出口", "物流运输", "航运港口", "旅游观光", "餐饮", "新闻", "研究科研", "国际贸易", "咨询顾问", "AI/大数据"] }
+  };
+  // 十神→现代行业/岗位（第 2 层：角色工种）
+  const SHISHEN_INDUSTRY = {
+    "官杀": { inds: ["企业管理", "政府公职", "法务合规", "执法", "危机公关", "项目管理", "行政管理"] },
+    "财":   { inds: ["经商创业", "金融投融资", "销售", "财务", "贸易", "市场商务"] },
+    "食伤": { inds: ["产品", "设计", "研发", "内容创作", "自媒体", "演艺", "咨询", "授课", "写作"] },
+    "印":   { inds: ["教育", "科研", "文化", "医疗", "学术", "出版", "顾问", "心理咨询"] },
+    "比劫": { inds: ["独立创业", "销售", "竞技", "自由职业", "合伙经营"] }
+  };
+
+  // 最旺五行 / 最缺五行（加权能量）
+  const powerEl = (report && report.elements_power) ? report.elements_power : null;
+  let topEl = "", leastEl = "";
+  if (powerEl) {
+    let bv = -1, wv = 1e9;
+    ["木", "火", "土", "金", "水"].forEach(w => {
+      const v = powerEl[w] || 0;
+      if (v > bv) { bv = v; topEl = w; }
+      if (v < wv) { wv = v; leastEl = w; }
+    });
+  }
+
   let careerType, careerAnalysis, careerAdvice;
   switch (main) {
     case "官杀":
@@ -766,9 +795,28 @@ function computeMarriageAndCareer(result, report, gender) {
       careerAdvice = `比劫旺者宜独立开拓，合伙需谨慎分利；身弱则喜比劫帮扶，可借团队之力共同发展。`;
   }
 
+  // —— 五行行业 + 喜用/中和 补充（对齐主流"五行定行业、喜用定最顺赛道"的三层结构）——
+  const elDir = topEl && ELEMENT_INDUSTRY[topEl] ? ELEMENT_INDUSTRY[topEl] : null;
+  const shiInds = SHISHEN_INDUSTRY[main] ? SHISHEN_INDUSTRY[main].inds : [];
+  const ratioEl = (report && report.strength) ? report.strength.ratio : null;
+  const isNeutral = ratioEl != null && ratioEl > 0.45 && ratioEl < 0.55;
+  const elNote = elDir
+    ? `命局${topEl}气偏盛、主“${elDir.dir}”。就行业方向看，较契合的现代行业有：${elDir.inds.join("、")}。`
+    : "";
+  const shiNote = shiInds.length
+    ? `命局十神以“${main}”最旺，先天角色定位偏向：${shiInds.join("、")}。`
+    : "";
+  const yongNote = isNeutral
+    ? "命局中和、喜用方向不分明，且不判唯一定论，行业取舍以上面的五行/十神倾向作参考即可。"
+    : ((report && report.yong_shen) ? `喜用方向为「${report.yong_shen}」，往喜用对应的行业走通常更顺。` : "");
+  if (elNote) careerAnalysis = careerAnalysis + " " + elNote;
+  if (yongNote) careerAdvice = careerAdvice + " " + yongNote;
+
   return {
     marriage: { spouseMain, spouseSide, spouseCount, spouseInStem, palace, palaceRelation, chonged, spouseIsYong, spouseFate, palaceTxt, spouseHelp },
-    career: { main, mainCount, careerType, careerAnalysis, careerAdvice, monthRelation: report ? report.month_relation : "" }
+    career: { main, mainCount, careerType, careerAnalysis, careerAdvice, monthRelation: report ? report.month_relation : "",
+      element: topEl, elementDir: elNote, roleDir: shiNote, yongNote,
+      elementIndustries: elDir ? elDir.inds : [], roleIndustries: shiInds }
   };
 }
 

@@ -504,7 +504,7 @@
 </div>
 
 <script src="cities-data.js?v=4"></script>
-<script src="engine.js?v=8"></script>
+<script src="engine.js?v=9"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -677,9 +677,9 @@ function buildMarriageCareerHtml(result, report) {
        <div class="v">${m.spouseFate}<br><br>${m.palaceTxt}<br><br>${m.spouseHelp}</div>
      </div>
      <div class="detail-block">
-       <div class="k">事业分析 · ${c.careerType}</div>
-       <div class="v">${c.careerAnalysis}<br><br>${c.careerAdvice}</div>
-     </div>`;
+      <div class="k">事业分析 · ${c.careerType}</div>
+      <div class="v">${c.careerAnalysis}<br><br>${c.roleDir ? c.roleDir + "<br><br>" : ""}${c.careerAdvice}</div>
+    </div>`;
 }
 
 /* 把喜用神方向翻译成大白话 */
@@ -706,7 +706,7 @@ function buildPlainSummary(result, report) {
   const character = tc ? tc["性格"] : "性格特质需结合全盘判断。";
 
   // 事业白话
-  const careerPlain = `${c.careerType}。${c.careerAnalysis.replace(/（\d+ 处）/, "")}`;
+  const careerPlain = `${c.careerType}。${c.careerAnalysis.replace(/（\d+ 处）/, "")}${c.yongNote ? " " + c.yongNote : ""}`;
 
   // 婚姻白话
   const marriagePlain = `${m.spouseFate}${m.palaceTxt}${m.spouseHelp}`;
