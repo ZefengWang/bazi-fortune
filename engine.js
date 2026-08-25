@@ -929,6 +929,9 @@ const ZODIAC = { "子":"鼠","丑":"牛","寅":"虎","卯":"兔","辰":"龙","�
 const HE_SHENG = { "木":"火", "火":"土", "土":"金", "金":"水", "水":"木" };  // 我生
 const HE_KE    = { "木":"土", "火":"金", "土":"水", "金":"木", "水":"火" };  // 我克
 
+/* 天干五合（甲己合土、乙庚合金、丙辛合水、丁壬合木、戊癸合火），双向映射 */
+const HE_TIANGAN_HE = { "甲":"己","己":"甲","乙":"庚","庚":"乙","丙":"辛","辛":"丙","丁":"壬","壬":"丁","戊":"癸","癸":"戊" };
+
 /* 返回两支关系（a 相对 b），供生肖与婚姻宫共同使用 */
 function branchRelationHe(a, b) {
   if (HE_COMBINE[a] === b) return { type: "liuhe",  label: "六合", good: true,  strong: true,  text: `${a}${b}为六合` };
@@ -1020,25 +1023,48 @@ function hehunYongText(dimY, topA, topB) {
 }
 
 /* 合婚主函数：入参为双方的 execute 结果 + generate_report 结果 */
+/* 判断命局是否为四柱纯阳 / 纯阴（四天干四地支阴阳一致） */
+function detectPureYinYang(result) {
+  const stems = [result.year_tg, result.month_tg, result.day_tg, result.hour_tg];
+  const branches = [result.year_dz, result.month_dz, result.day_dz, result.hour_dz];
+  const allYang = stems.every(t => YIN_YANG[t] === "阳") && branches.every(b => YIN_YANG[b] === "阳");
+  const allYin  = stems.every(t => YIN_YANG[t] === "阴") && branches.every(b => YIN_YANG[b] === "阴");
+  if (allYang) return "纯阳";
+  if (allYin) return "纯阴";
+  return "非纯";
+}
+
+/* 天干五合（有情之合）的白话解析 */
+function hehunWuheText(rel, tgA, tgB) {
+  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干五合，属「有情之合」，彼此情投意合、吸引力强，是日主层面恩爱的象征，感情根基深厚。`;
+}
+
 function computeHehun(resA, repA, resB, repB) {
   const zdx = repA.me_x;               // 甲方日主五行
   const ydx = repB.me_x;               // 乙方日主五行
+  const tgA = resA.day_tg, tgB = resB.day_tg;  // 双方日干（天干五合判定用）
   const zxz = resA.year_dz;            // 甲方生肖（年支）
   const yxz = resB.year_dz;            // 乙方生肖
   const zhdz = resA.day_dz;            // 甲方婚姻宫（日支）
   const yhdz = resB.day_dz;            // 乙方婚姻宫
 
-  // —— ① 生肖（年支）——
+  // —— ① 生肖（年支）满分 20 ——
   const sxRel = branchRelationHe(zxz, yxz);
-  const sxScore = sxRel.type === "liuhe" ? 25 : sxRel.type === "sanhe" ? 20 : sxRel.type === "normal" ? 12 : sxRel.type === "clash" ? 0 : 6;
+  const sxScore = sxRel.type === "liuhe" ? 20 : sxRel.type === "sanhe" ? 15 : sxRel.type === "normal" ? 10 : sxRel.type === "clash" ? 0 : 5;
 
-  // —— ② 日干（日主）五行生克 ——
-  const rgRel = wuxingRelationHe(zdx, ydx);
-  const rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 13 : 5;
+  // —— ② 日主（日干）：先判天干五合（有情之合），再判五行生克，满分 20 ——
+  let rgRel, rgScore;
+  if (HE_TIANGAN_HE[tgA] === tgB) {
+    rgRel = { type: "he", label: "天干相合", good: true, strong: true, text: `${tgA}${tgB}为天干五合，有情之合` };
+    rgScore = 20;
+  } else {
+    rgRel = wuxingRelationHe(zdx, ydx);
+    rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 13 : 5;
+  }
 
-  // —— ③ 日支（婚姻宫）——
+  // —— ③ 日支（婚姻宫）满分 20 ——
   const hgRel = branchRelationHe(zhdz, yhdz);
-  const hgScore = hgRel.type === "liuhe" ? 25 : hgRel.type === "sanhe" ? 20 : hgRel.type === "normal" ? 12 : hgRel.type === "clash" ? 0 : 6;
+  const hgScore = hgRel.type === "liuhe" ? 20 : hgRel.type === "sanhe" ? 15 : hgRel.type === "normal" ? 10 : hgRel.type === "clash" ? 0 : 5;
 
   // —— ④ 五行能量互补 ——
   const pa = repA.elements_power, pb = repB.elements_power;
@@ -1079,7 +1105,30 @@ function computeHehun(resA, repA, resB, repB) {
     else if (yongScore === 7) yongScore = 4;   // 4 为下限，保持不变
   }
 
-  const score = sxScore + rgScore + hgScore + buScore + yongScore;
+  // —— ⑥ 格局阴阳（四柱纯阳/纯阴）满分 10 ——
+  const pureA = detectPureYinYang(resA), pureB = detectPureYinYang(resB);
+  const aPure = pureA !== "非纯", bPure = pureB !== "非纯";
+  let gejuScore, gejuText;
+  if (aPure && bPure && pureA !== pureB) {
+    gejuScore = 10;
+    gejuText = `甲方为「${pureA}」、乙方为「${pureB}」，孤阳遇孤阴、刚柔相济，阴阳得以调合，属难得的互补格局。`;
+  } else if (pureA === "纯阳" && pureB === "纯阳") {
+    gejuScore = 3;
+    gejuText = "双方均为纯阳之命，阳气过盛、性格皆偏刚烈强势，易硬碰硬，需以柔克刚、多退让。";
+  } else if (pureA === "纯阴" && pureB === "纯阴") {
+    gejuScore = 3;
+    gejuText = "双方均为纯阴之命，阴气偏重、性格皆内敛敏感，易冷处理、生隔阂，需主动沟通、坦诚交心。";
+  } else if (aPure || bPure) {
+    gejuScore = 6;
+    const pureSide = aPure ? "甲方" : "乙方";
+    const pureKind = aPure ? pureA : pureB;
+    gejuText = `${pureSide}为「${pureKind}」独特性格格局、另一方为常规格局；纯者偏执一端，需对方以包容调剂，互补中略带磨合。`;
+  } else {
+    gejuScore = 5;
+    gejuText = "双方均为常规格局（非纯阳、非纯阴），阴阳分布平稳，无特殊偏枯之象。";
+  }
+
+  const score = sxScore + rgScore + hgScore + buScore + yongScore + gejuScore;
   let level, verdict;
   if (score >= 85) { level = "上等婚"; verdict = "天作之合，双方生肖、日主与婚姻宫高度契合，五行互补，情感根基深厚。"; }
   else if (score >= 70) { level = "中上等婚"; verdict = "良配，契合度较高，只要经营得当，感情生活可和谐美满。"; }
@@ -1089,24 +1138,26 @@ function computeHehun(resA, repA, resB, repB) {
 
   // —— 详细白话解析 ——
   const analysis = {
-    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），五维综合 ${score} 分，判为「${level}」。${verdict}`,
+    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），六维综合 ${score} 分，判为「${level}」。${verdict}`,
     shengxiao: hehunZhiText(sxRel, zxz, yxz, "年支生肖"),
-    rigan:    hehunWuxingText(rgRel, zdx, ydx),
+    rigan:    rgRel.type === "he" ? hehunWuheText(rgRel, tgA, tgB) : hehunWuxingText(rgRel, zdx, ydx),
     hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
     hubu:     hehunHubuText({ complement, conflict }, topA, topB),
-    yongshen: hehunYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB)
+    yongshen: hehunYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB),
+    geju:     gejuText
   };
 
   return {
     score, level, verdict, analysis,
-    a: { ri_zhu: resA.ri_zhu, me_x: zdx, year_zhi: zxz, day_zhi: zhdz, power: pa, top: topA, yong: yongA },
-    b: { ri_zhu: resB.ri_zhu, me_x: ydx, year_zhi: yxz, day_zhi: yhdz, power: pb, top: topB, yong: yongB },
+    a: { ri_zhu: resA.ri_zhu, me_x: zdx, year_zhi: zxz, day_zhi: zhdz, power: pa, top: topA, yong: yongA, pure: pureA },
+    b: { ri_zhu: resB.ri_zhu, me_x: ydx, year_zhi: yxz, day_zhi: yhdz, power: pb, top: topB, yong: yongB, pure: pureB },
     dims: {
       shengxiao: { score: sxScore, rel: sxRel },
       rigan:    { score: rgScore, rel: rgRel },
       hunyin:   { score: hgScore, rel: hgRel },
       hubu:     { score: buScore, complement, conflict },
-      yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral }
+      yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral },
+      geju:     { score: gejuScore, pureA, pureB }
     }
   };
 }
@@ -1119,7 +1170,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
-    computeMarriageAndCareer, isYongShen, computeHehun,
+    computeMarriageAndCareer, isYongShen, computeHehun, detectPureYinYang, hehunWuheText,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };
@@ -1130,7 +1181,7 @@ if (typeof module !== "undefined" && module.exports) {
     is_valid_date, date_to_julian_day, get_shishen_relation, primaryHiddenStem,
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
-    computeMarriageAndCareer, isYongShen, computeHehun,
+    computeMarriageAndCareer, isYongShen, computeHehun, detectPureYinYang, hehunWuheText,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };

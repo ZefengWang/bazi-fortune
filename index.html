@@ -386,7 +386,7 @@
 
   <div class="card" id="hehun">
     <h2>八字合婚（学习演示）</h2>
-    <div class="hehun-note">输入双方出生信息，按①生肖合冲 ②日主生克 ③婚姻宫合冲 ④五行互补 ⑤喜用神互补 五维综合评分。民俗文化内容，仅供娱乐参考，不构成任何婚恋建议。</div>
+    <div class="hehun-note">输入双方出生信息，按①生肖合冲 ②日主生克（含天干五合） ③婚姻宫合冲 ④五行互补 ⑤喜用神互补 ⑥格局阴阳（纯阳纯阴） 六维综合评分。民俗文化内容，仅供娱乐参考，不构成任何婚恋建议。</div>
     <div class="hehun-grid">
       <div class="hehun-side">
         <h3>甲方</h3>
@@ -477,7 +477,7 @@
 </div>
 
 <script src="cities-data.js?v=4"></script>
-<script src="engine.js?v=5"></script>
+<script src="engine.js?v=6"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -926,13 +926,21 @@ function buildHehunHtml(h, nameA, nameB) {
   else if (y.aFoxiangB) yongTxt = "甲方能补乙方所需";
   else if (y.bFoxiangA) yongTxt = "乙方能补甲方所需";
   else yongTxt = "喜用神互补较弱";
+  const g = h.dims.geju;
+  let gejuDesc;
+  if (g.pureA !== "非纯" && g.pureB !== "非纯" && g.pureA !== g.pureB) gejuDesc = "纯阳配纯阴 · 阴阳调和";
+  else if (g.pureA === "纯阳" && g.pureB === "纯阳") gejuDesc = "双方纯阳 · 刚烈需柔";
+  else if (g.pureA === "纯阴" && g.pureB === "纯阴") gejuDesc = "双方纯阴 · 内敛需通";
+  else if (g.pureA !== "非纯" || g.pureB !== "非纯") gejuDesc = "一方纯命 · 需调济";
+  else gejuDesc = "常规格局 · 无偏枯";
   const person = (label, p) => `<div class="hehun-person">
     <div class="pn">${label}</div>
     <div class="pv">
       日主：<b>${p.ri_zhu}</b>（${p.me_x}）<br>
       生肖：${p.year_zhi}${SX[p.year_zhi]}（年支）<br>
       婚姻宫：${p.day_zhi}（日支）<br>
-      最旺五行：${p.top.join("、")}
+      最旺五行：${p.top.join("、")}<br>
+      格局：${p.pure}
     </div>
   </div>`;
   return `
@@ -944,11 +952,12 @@ function buildHehunHtml(h, nameA, nameB) {
       </div>
     </div>
     <div class="hehun-dims">
-      ${dimCard("① 生肖合冲（25分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
-      ${dimCard("② 日主生克（20分）", h.dims.rigan, h.dims.rigan.rel.text)}
-      ${dimCard("③ 婚姻宫合冲（25分）", h.dims.hunyin, h.dims.hunyin.rel.text)}
+      ${dimCard("① 生肖合冲（20分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
+      ${dimCard("② 日主生克·五合（20分）", h.dims.rigan, h.dims.rigan.rel.text)}
+      ${dimCard("③ 婚姻宫合冲（20分）", h.dims.hunyin, h.dims.hunyin.rel.text)}
       ${dimCard("④ 五行互补（15分）", h.dims.hubu, `互补 ${h.dims.hubu.complement} 项 · 冲突 ${h.dims.hubu.conflict} 项`)}
       ${dimCard("⑤ 喜用神互补（15分）", h.dims.yongshen, yongTxt)}
+      ${dimCard("⑥ 格局阴阳（10分）", h.dims.geju, gejuDesc)}
     </div>
     <div class="hehun-info">
       ${person(nameA, h.a)}
@@ -962,6 +971,7 @@ function buildHehunHtml(h, nameA, nameB) {
       <div class="ha-item"><span class="ha-tag">③ 婚姻宫</span>${h.analysis.hunyin}</div>
       <div class="ha-item"><span class="ha-tag">④ 五行互补</span>${h.analysis.hubu}</div>
       <div class="ha-item"><span class="ha-tag">⑤ 喜用神</span>${h.analysis.yongshen}</div>
+      <div class="ha-item"><span class="ha-tag">⑥ 格局</span>${h.analysis.geju}</div>
     </div>
     <div class="hehun-disclaimer">⚠️ 合婚为民俗文化内容，无科学依据，评分仅供娱乐参考，不构成任何婚恋建议。</div>`;
 }
