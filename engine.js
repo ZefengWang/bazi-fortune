@@ -922,6 +922,9 @@ const HE_CLASH    = { "子":"午","午":"子","丑":"未","未":"丑","寅":"申
 const HE_HARM     = { "子":"未","未":"子","丑":"午","午":"丑","寅":"巳","巳":"寅","卯":"辰","辰":"卯","申":"亥","亥":"申","酉":"戌","戌":"酉" };   // 六害
 const HE_PUNISH   = { "寅":"巳","巳":"申","申":"寅","丑":"戌","戌":"未","未":"丑","子":"卯","卯":"子","辰":"辰","午":"午","酉":"酉","亥":"亥" };   // 相刑（含自刑）
 
+/* 十二地支对应生肖（动物名），供合婚文案通俗化显示 */
+const ZODIAC = { "子":"鼠","丑":"牛","寅":"虎","卯":"兔","辰":"龙","巳":"蛇","午":"马","未":"羊","申":"猴","酉":"鸡","戌":"狗","亥":"猪" };
+
 /* 五行生克（单向） */
 const HE_SHENG = { "木":"火", "火":"土", "土":"金", "金":"水", "水":"木" };  // 我生
 const HE_KE    = { "木":"土", "火":"金", "土":"水", "金":"木", "水":"火" };  // 我克
@@ -973,7 +976,7 @@ function topWuxings(power) {
 /* 生肖 / 婚姻宫（地支）关系的白话解析 */
 function hehunZhiText(rel, a, b, scope) {
   switch (rel.type) {
-    case "liuhe":  return `${scope}「${a}」与「${b}」为六合，地支相合中最吉的一种，彼此性情相投、互相吸引，相处轻松愉悦，感情根基稳定。`;
+    case "liuhe":  return `${scope}「${a}」与「${b}」为六合，地支相合中较吉利的一类，彼此性情相投、互相吸引，相处轻松愉悦，感情根基稳定。`;
     case "sanhe":  return `${scope}「${a}」与「${b}」为三合，彼此呼应、志趣相近，配合默契，能互相成就、共同进步。`;
     case "clash":  return `${scope}「${a}」与「${b}」为六冲，正面相冲，性格与节奏差异较大，容易起争执、闹矛盾，需要双方多磨合、多忍让。`;
     case "harm":   return `${scope}「${a}」与「${b}」为相害，暗中相妨，表面平静、内里易生隔阂，需坦诚沟通、及时化解误会。`;
@@ -1072,7 +1075,7 @@ function computeHehun(resA, repA, resB, repB) {
 
   // —— 详细白话解析 ——
   const analysis = {
-    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${zxz}，乙方日主「${resB.ri_zhu}」属${ydx}、生肖${yxz}，五维综合 ${score} 分，判为「${level}」。${verdict}`,
+    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），五维综合 ${score} 分，判为「${level}」。${verdict}`,
     shengxiao: hehunZhiText(sxRel, zxz, yxz, "年支生肖"),
     rigan:    hehunWuxingText(rgRel, zdx, ydx),
     hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
