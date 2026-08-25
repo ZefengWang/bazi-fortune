@@ -1220,6 +1220,224 @@ function computeHehun(resA, repA, resB, repB) {
   };
 }
 
+/* =====================================================================
+ * 同事 / 合作伙伴契合度（六维）
+ *   ① 生肖合冲（年支）      —— 占比 10 分
+ *   ② 日主生克·五合（日干） —— 占比 20 分
+ *   ③ 比劫互动（合作核心）  —— 占比 25 分
+ *   ④ 五行能量互补度        —— 占比 15 分
+ *   ⑤ 喜用神互补度          —— 占比 20 分
+ *   ⑥ 格局阴阳（纯阳/纯阴） —— 占比 10 分
+ * 说明：合作契合度为传统民俗文化内容，无科学依据，评分仅供娱乐参考。
+ * ===================================================================== */
+
+/* 生肖（年支）关系的合作语境白话解析 */
+function hezuoZhiText(rel, a, b) {
+  switch (rel.type) {
+    case "liuhe":  return `年支生肖「${a}」与「${b}」为六合，地支相合中较吉利的一类，彼此性情相投、配合默契，合作顺畅。`;
+    case "sanhe":  return `年支生肖「${a}」与「${b}」为三合，彼此呼应、志趣相近，配合默契，能互相成就、共同进步。`;
+    case "clash":  return `年支生肖「${a}」与「${b}」为六冲，正面相冲，性格与节奏差异较大，合作中容易起争执，需多磨合、多忍让。`;
+    case "harm":   return `年支生肖「${a}」与「${b}」为相害，暗中相妨，表面平静、内里易生隔阂，需坦诚沟通、及时化解误会。`;
+    case "punish": return `年支生肖「${a}」与「${b}」为相刑，长期合作易有摩擦与内耗，需彼此包容、少较真。`;
+    default:       return `年支生肖「${a}」与「${b}」不冲不合，关系平和，虽无大吉大利，也没有明显冲克，顺其自然即可。`;
+  }
+}
+
+/* 日主五行生克（合作语境）白话解析 */
+function hezuoWuxingText(rel, zdx, ydx) {
+  switch (rel.type) {
+    case "sheng": return `甲方日主属${zdx}、乙方日主属${ydx}，${rel.text}，五行相生，一方能带动另一方，配合中形成良性循环，合作顺畅。`;
+    case "same":  return `双方日主同属${zdx}，五行比和，思维同频、沟通成本低；但同类相叠也可能各持己见、缺乏制衡，需明确分工。`;
+    case "ke":    return `甲方日主属${zdx}、乙方日主属${ydx}，${rel.text}，五行相克，合作中一方偏主导、一方易受压，需把握分寸、互相尊重。`;
+    default:      return `双方日主五行平和，无明显的生克牵制，合作独立又和缓。`;
+  }
+}
+
+/* 比劫互动（合作核心维度）白话解析 */
+function hezuoBijieText(bjA, bjB, weakA, weakB, strongA, strongB, zdx, ydx) {
+  const descA = bjA > 0.3 ? "比劫偏旺" : bjA < 0.15 ? "比劫偏弱" : "比劫适中";
+  const descB = bjB > 0.3 ? "比劫偏旺" : bjB < 0.15 ? "比劫偏弱" : "比劫适中";
+  let s = `甲方日主「${zdx}」${descA}（占比 ${(bjA * 100).toFixed(0)}%），乙方日主「${ydx}」${descB}（占比 ${(bjB * 100).toFixed(0)}%）。`;
+  if (weakA && weakB) s += "双方身弱、皆以比劫为喜用，合作中能互为臂膀、彼此帮扶，是典型的「团队型」组合，抱团取暖、共担风雨。";
+  else if (strongA && strongB) s += "双方身强、皆以比劫为忌神，合作中易因利益分配起争执、互不相让，需提前明确权责与分成。";
+  else if ((weakA && strongB) || (strongA && weakB)) s += "一方身弱需帮扶、一方身强能独立，强弱互补、各司其职，适合「主内主外」式分工合作。";
+  else if (weakA || weakB) s += "一方身弱需比劫帮扶、另一方身中和，合作中弱势方可得助力，整体平稳、无明显冲突。";
+  else if (strongA || strongB) s += "一方身强忌比劫、另一方身中和，强势方易主导节奏，需注意分工与话语权平衡。";
+  else s += "双方身中和、比劫喜忌中性，合作中既无大助力也无大冲突，属平稳型搭档，靠共同目标维系。";
+  if (Math.abs(bjA - bjB) > 0.15) s += "且双方比劫强弱错位明显，能形成互补分工，减少同质竞争。";
+  else if (bjA > 0.3 && bjB > 0.3) s += "但双方比劫皆旺，同质竞争强，需避免「一山二虎」、争夺主导权。";
+  return s;
+}
+
+/* 天干五合（合作语境）白话解析 */
+function hezuoWuheText(rel, tgA, tgB) {
+  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干五合，属「有情之合」，彼此投契、配合默契，是日主层面天然合拍的象征，合作中能形成高度默契与信任。`;
+}
+
+/* 五行能量互补度（合作语境）白话解析 */
+function hezuoHubuText(hubu, topA, topB) {
+  let s = `甲方最旺五行为「${topA.join("、")}」，乙方最旺五行为「${topB.join("、")}」。`;
+  if (hubu.identical) s += `双方五行分布完全一致、强弱趋同，亲和有余而同气过旺，缺少互补差异，合作中易思路趋同、缺乏制衡，需主动引入不同视角。`;
+  else if (hubu.complement >= 2) s += `双方五行强弱明显错位、彼此补足（互补 ${hubu.complement} 项），能各取所长、互相补位，是相当理想的搭档组合。`;
+  else if (hubu.complement === 1) s += `双方有 ${hubu.complement} 项五行互补，能起到一定的取长补短效果。`;
+  else if (hubu.overlap >= 2) s += `双方五行缺少互补，偏强的部分重叠（${hubu.overlap} 项同类趋同），能力结构相似但易各执己见，需明确分工、互相包容。`;
+  else s += `双方五行缺少互补，各自偏强的部分重叠，容易出现争夺或互相不理解。`;
+  return s;
+}
+
+/* 喜用神互补度（合作语境）白话解析 */
+function hezuoYongText(dimY, topA, topB) {
+  const a = dimY.aFoxiangB, b = dimY.bFoxiangA;
+  if (dimY.neutral) {
+    const base = (a && b) ? "本来喜用互旺" : (a || b) ? "本来存在单向补益" : "本无补益";
+    return `一方或双方命局为「中和」，喜用方向不明确，此维度按保守口径降档计分（${base}），避免虚高。`;
+  }
+  if (a && b) return `甲方最旺的「${topA[0]}」恰是乙方命局所需，乙方最旺的「${topB[0]}」也恰是甲方所需，双方喜用神互相成就，是合作中难得的「互相旺对方」组合。`;
+  if (a) return `甲方最旺的「${topA[0]}」正是乙方命局所缺所需，甲能补乙，能为合作带来实质助力。`;
+  if (b) return `乙方最旺的「${topB[0]}」正是甲方命局所缺所需，乙能补甲，能为合作带来实质助力。`;
+  return `双方喜用神互补较弱，各自的强势之处并非对方所需，难以形成「补益」效应。`;
+}
+
+/* 合作契合度主函数：入参为双方的 execute 结果 + generate_report 结果 */
+function computeHezuo(resA, repA, resB, repB) {
+  const zdx = repA.me_x, ydx = repB.me_x;            // 双方日主五行
+  const tgA = resA.day_tg, tgB = resB.day_tg;        // 双方日干
+  const zxz = resA.year_dz, yxz = resB.year_dz;      // 双方生肖（年支）
+
+  // —— ① 生肖（年支）满分 10 ——
+  const sxRel = branchRelationHe(zxz, yxz);
+  const sxScore = sxRel.type === "liuhe" ? 10 : sxRel.type === "sanhe" ? 8 : sxRel.type === "normal" ? 6 : sxRel.type === "clash" ? 0 : 3;
+
+  // —— ② 日主（日干）：先判天干五合，再判五行生克，满分 20 ——
+  let rgRel, rgScore;
+  if (HE_TIANGAN_HE[tgA] === tgB) {
+    rgRel = { type: "he", label: "天干相合", good: true, strong: true, text: `${tgA}${tgB}为天干五合，有情之合` };
+    rgScore = 20;
+  } else {
+    rgRel = wuxingRelationHe(zdx, ydx);
+    rgScore = rgRel.type === "sheng" ? 16 : rgRel.type === "same" ? 12 : 5;
+  }
+
+  // —— ③ 比劫互动（合作核心）满分 25 ——
+  const pa = repA.elements_power, pb = repB.elements_power;
+  const suma = ELEMENT_ORDER.reduce((s, w) => s + (pa[w] || 0), 0) || 1;
+  const sumb = ELEMENT_ORDER.reduce((s, w) => s + (pb[w] || 0), 0) || 1;
+  const bjA = (pa[zdx] || 0) / suma;                 // 甲方比劫能量占比（同我者 = 日主五行）
+  const bjB = (pb[ydx] || 0) / sumb;
+  const weakA = repA.strength.ratio <= 0.45, strongA = repA.strength.ratio >= 0.55;
+  const weakB = repB.strength.ratio <= 0.45, strongB = repB.strength.ratio >= 0.55;
+  let bjScore = 10;
+  if (weakA && weakB) bjScore += 10;                 // 双方身弱需比劫 → 合作共赢
+  else if (strongA && strongB) bjScore -= 4;         // 双方身强忌比劫 → 易争夺
+  else if ((weakA && strongB) || (strongA && weakB)) bjScore += 5; // 强弱互补
+  else if (weakA || weakB) bjScore += 3;             // 一方身弱需比劫
+  else if (strongA || strongB) bjScore -= 2;         // 一方身强忌比劫
+  else bjScore += 2;                                 // 双方身中和 → 喜忌中性、平稳
+  const bjDiff = Math.abs(bjA - bjB);
+  if (bjDiff > 0.15) bjScore += 3;                   // 比劫强弱错位 → 互补分工
+  else if (bjA > 0.3 && bjB > 0.3) bjScore -= 2;     // 双方比劫皆旺 → 同质竞争
+  bjScore = Math.max(0, Math.min(25, Math.round(bjScore)));
+
+  // —— ④ 五行能量互补 满分 15 ——
+  let complement = 0, overlap = 0;
+  ELEMENT_ORDER.forEach(w => {
+    const da = (pa[w] || 0) / suma, db = (pb[w] || 0) / sumb;
+    const deva = da - 0.2, devb = db - 0.2;
+    if ((deva > 0.05 && devb < -0.05) || (deva < -0.05 && devb > 0.05)) complement++;
+    else if (Math.abs(deva) > 0.05 && Math.abs(devb) > 0.05 && (deva > 0) === (devb > 0)) overlap++;
+  });
+  let buScore = 8 + complement * 2;
+  buScore = Math.max(8, Math.min(15, Math.round(buScore)));
+
+  // —— ⑤ 喜用神互补 满分 20 ——
+  const yongA = yongWuxings(zdx, repA.strength.ratio);
+  const yongB = yongWuxings(ydx, repB.strength.ratio);
+  const topB = topWuxings(pb), topA = topWuxings(pa);
+  const aFoxiangB = yongB.some(w => topA[0] === w);
+  const bFoxiangA = yongA.some(w => topB[0] === w);
+  const aErxiangB = yongB.some(w => topA[1] === w);
+  const bErxiangA = yongA.some(w => topB[1] === w);
+  let yongScore;
+  if (aFoxiangB && bFoxiangA) yongScore = 20;
+  else if (aFoxiangB || bFoxiangA || (aErxiangB && bErxiangA)) yongScore = 14;
+  else if (aErxiangB || bErxiangA) yongScore = 10;
+  else yongScore = 6;
+  const neutralA = repA.strength.ratio > 0.45 && repA.strength.ratio < 0.55;
+  const neutralB = repB.strength.ratio > 0.45 && repB.strength.ratio < 0.55;
+  const neutral = neutralA || neutralB;
+  if (neutral) {
+    if (yongScore === 20) yongScore = 14;
+    else if (yongScore === 14) yongScore = 10;
+    else if (yongScore === 10) yongScore = 8;
+  }
+
+  // —— ⑥ 格局阴阳 满分 10 ——
+  const pureA = detectPureYinYang(resA), pureB = detectPureYinYang(resB);
+  const aPure = pureA !== "非纯", bPure = pureB !== "非纯";
+  let gejuScore, gejuText;
+  if (aPure && bPure && pureA !== pureB) {
+    gejuScore = 10;
+    gejuText = `甲方为「${pureA}」、乙方为「${pureB}」，孤阳遇孤阴、刚柔相济，阴阳得以调合，属难得的互补格局。`;
+  } else if (pureA === "纯阳" && pureB === "纯阳") {
+    gejuScore = 3;
+    gejuText = "双方均为纯阳之命，阳气过盛、性格皆偏刚烈强势，合作中易硬碰硬、争夺主导，需以柔克刚、明确分工。";
+  } else if (pureA === "纯阴" && pureB === "纯阴") {
+    gejuScore = 3;
+    gejuText = "双方均为纯阴之命，阴气偏重、性格皆内敛敏感，合作中易冷处理、生隔阂，需主动沟通、坦诚交心。";
+  } else if (aPure || bPure) {
+    gejuScore = 6;
+    const pureSide = aPure ? "甲方" : "乙方";
+    const pureKind = aPure ? pureA : pureB;
+    gejuText = `${pureSide}为「${pureKind}」独特性格格局、另一方为常规格局；纯者偏执一端，需对方以包容调剂，互补中略带磨合。`;
+  } else {
+    gejuScore = 5;
+    gejuText = "双方均为常规格局（非纯阳、非纯阴），阴阳分布平稳，无特殊偏枯之象。";
+  }
+
+  const score = sxScore + rgScore + bjScore + buScore + yongScore + gejuScore;
+  let level, verdict;
+  if (score >= 85) { level = "上等合作"; verdict = "黄金搭档，双方生肖、日主与比劫互动高度契合，五行互补，合作中能各展所长、互相成就。"; }
+  else if (score >= 70) { level = "中上等合作"; verdict = "良配搭档，契合度较高，分工明确、配合默契，只要权责清晰即可高效协作。"; }
+  else if (score >= 55) { level = "中等合作"; verdict = "一般搭档，合作中需多沟通磨合，把性格差异化为互补优势。"; }
+  else if (score >= 40) { level = "中下等合作"; verdict = "契合度偏低，合作中易有摩擦与利益分歧，需提前约定规则、保持耐心。"; }
+  else { level = "下等合作"; verdict = "冲克较重，合作易生冲突与内耗，若非必要不建议深度绑定。"; }
+
+  // 四柱完全相同：专门文案，避免被通用档位"冲克"措辞误导
+  const identical = resA.year_tg  === resB.year_tg  && resA.year_dz  === resB.year_dz &&
+                    resA.month_tg === resB.month_tg && resA.month_dz === resB.month_dz &&
+                    resA.day_tg   === resB.day_tg   && resA.day_dz   === resB.day_dz &&
+                    resA.hour_tg  === resB.hour_tg  && resA.hour_dz  === resB.hour_dz;
+  if (identical) {
+    level = "中等合作";
+    verdict = "双方八字如出一辙，思维方式与行事节奏高度同频，默契十足、沟通成本低。但同气过旺而五行缺互补，易趋同固执、缺乏制衡，合作中需明确分工、避免各自为政。";
+  }
+
+  // —— 详细白话解析 ——
+  const analysis = {
+    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），六维综合 ${score} 分，判为「${level}」。${verdict}`,
+    shengxiao: hezuoZhiText(sxRel, zxz, yxz),
+    rigan:    rgRel.type === "he" ? hezuoWuheText(rgRel, tgA, tgB) : hezuoWuxingText(rgRel, zdx, ydx),
+    bijie:    hezuoBijieText(bjA, bjB, weakA, weakB, strongA, strongB, zdx, ydx),
+    hubu:     hezuoHubuText({ complement, overlap, identical }, topA, topB),
+    yongshen: hezuoYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB),
+    geju:     gejuText
+  };
+
+  return {
+    score, level, verdict, analysis,
+    a: { ri_zhu: resA.ri_zhu, me_x: zdx, year_zhi: zxz, day_zhi: resA.day_dz, power: pa, top: topA, yong: yongA, pure: pureA, bijie: bjA },
+    b: { ri_zhu: resB.ri_zhu, me_x: ydx, year_zhi: yxz, day_zhi: resB.day_dz, power: pb, top: topB, yong: yongB, pure: pureB, bijie: bjB },
+    dims: {
+      shengxiao: { score: sxScore, rel: sxRel },
+      rigan:    { score: rgScore, rel: rgRel },
+      bijie:    { score: bjScore, bjA, bjB, weakA, weakB, strongA, strongB },
+      hubu:     { score: buScore, complement, overlap },
+      yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral },
+      geju:     { score: gejuScore, pureA, pureB }
+    }
+  };
+}
+
 /* ---------------- 导出（浏览器 / Node 双端） ---------------- */
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -1229,6 +1447,7 @@ if (typeof module !== "undefined" && module.exports) {
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     computeMarriageAndCareer, isYongShen, computeHehun, detectPureYinYang, hehunWuheText,
+    computeHezuo, hezuoZhiText, hezuoWuxingText, hezuoBijieText, hezuoWuheText, hezuoHubuText, hezuoYongText,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };
@@ -1240,6 +1459,7 @@ if (typeof module !== "undefined" && module.exports) {
     solarTermUtJd, equationOfTime, localToUtcMs, getTimeZoneOffsetMs, getStandardOffsetMin,
     computeDayunAndLiuNian, liunianGanzhi, jdToDate,
     computeMarriageAndCareer, isYongShen, computeHehun, detectPureYinYang, hehunWuheText,
+    computeHezuo, hezuoZhiText, hezuoWuxingText, hezuoBijieText, hezuoWuheText, hezuoHubuText, hezuoYongText,
     execute_global_fortune_engine, generate_report, PATTERN_DETAILS, FALLBACK_DETAIL,
     SHISHEN_DETAILS, PILLAR_MEANING, TIANGAN_CHARACTER, SHISHEN_GROUP, elementShishenGroup
   };

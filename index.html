@@ -93,13 +93,13 @@
   }
   .location-info b { color: var(--gold); }
 
-  button#submit, button#btn-hehun {
+  button#submit, button#btn-hehun, button#btn-hezuo {
     margin-top: 20px; width: 100%; padding: 14px; font-size: 16px; font-weight: 700; letter-spacing: 2px;
     color: #241a05; background: linear-gradient(180deg, var(--gold-2), var(--gold));
     border: none; border-radius: 10px; cursor: pointer; transition: transform .15s, filter .2s; font-family: inherit;
   }
-  button#submit:hover, button#btn-hehun:hover { filter: brightness(1.06); transform: translateY(-1px); }
-  button#submit:active, button#btn-hehun:active { transform: translateY(0); }
+  button#submit:hover, button#btn-hehun:hover, button#btn-hezuo:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  button#submit:active, button#btn-hehun:active, button#btn-hezuo:active { transform: translateY(0); }
 
   .error-msg { display: none; margin-top: 14px; padding: 12px 16px; background: rgba(224,101,90,0.12); border: 1px solid rgba(224,101,90,0.5); border-radius: 8px; color: #f0b8b1; font-size: 14px; }
 
@@ -497,6 +497,17 @@
     <div class="hehun-result" id="hehun-result"></div>
   </div>
 
+  <div class="card" id="hezuo">
+    <h2>同事 / 合作伙伴契合度（学习演示）</h2>
+    <div class="hehun-note">输入双方出生信息，按①生肖合冲 ②日主生克（含天干五合） ③比劫互动 ④五行互补 ⑤喜用神互补 ⑥格局阴阳 六维综合评分。民俗文化内容，仅供娱乐参考，不构成任何合作或职业建议。</div>
+    <div class="hehun-grid" id="hezuo-grid"></div>
+    <div class="hehun-submit">
+      <button id="btn-hezuo">开始合作测算</button>
+    </div>
+    <div class="error-msg" id="hezuo-error"></div>
+    <div class="hehun-result" id="hezuo-result"></div>
+  </div>
+
   <footer>
     <div>本页面为前端 JavaScript 实现的高精度排盘引擎，支持节气定月、时区换算、藏干身强弱等核心算法。</div>
     <div class="warn">⚠️ 仅供学习研究使用 · 禁止任何商业用途 · 结果不构成任何建议</div>
@@ -504,7 +515,7 @@
 </div>
 
 <script src="cities-data.js?v=4"></script>
-<script src="engine.js?v=9"></script>
+<script src="engine.js?v=10"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -1092,6 +1103,168 @@ initHehunLocation("hh-b");
 ["hh-a", "hh-b"].forEach(prefix => {
   $(prefix + "-country").addEventListener("change", () => hehunOnCountryChange(prefix));
   $(prefix + "-province").addEventListener("change", () => hehunRenderChinaCities(prefix));
+});
+
+/* ---------- 同事 / 合作伙伴契合度 ---------- */
+/* 输入区 HTML 生成（复用合婚区参数化三级联动逻辑） */
+function partnerSideHTML(prefix, title, defaultGender, def) {
+  const gMale = defaultGender === "male" ? "selected" : "";
+  const gFemale = defaultGender === "female" ? "selected" : "";
+  const d = def || { year: 1990, month: 6, day: 15, hour: 12 };
+  return `<div class="hehun-side">
+    <h3>${title}</h3>
+    <div class="grid">
+      <div class="field">
+        <label>性别</label>
+        <select id="${prefix}-gender"><option value="male" ${gMale}>男</option><option value="female" ${gFemale}>女</option></select>
+      </div>
+      <div class="field">
+        <label>出生年份（公元）</label>
+        <input type="number" id="${prefix}-year" placeholder="1990" value="${d.year}">
+      </div>
+      <div class="field">
+        <label>月份</label>
+        <input type="number" id="${prefix}-month" min="1" max="12" value="${d.month}">
+      </div>
+      <div class="field">
+        <label>日期</label>
+        <input type="number" id="${prefix}-day" min="1" max="31" value="${d.day}">
+      </div>
+      <div class="field">
+        <label>小时（0-23）</label>
+        <input type="number" id="${prefix}-hour" min="0" max="23" value="${d.hour}">
+      </div>
+      <div class="field">
+        <label>分钟</label>
+        <input type="number" id="${prefix}-minute" min="0" max="59" value="0">
+      </div>
+      <div class="field full">
+        <label for="${prefix}-country">出生国家 / 地区</label>
+        <select id="${prefix}-country"></select>
+      </div>
+      <div class="field" id="${prefix}-province-field">
+        <label for="${prefix}-province">省份 / 直辖市</label>
+        <select id="${prefix}-province"></select>
+      </div>
+      <div class="field" id="${prefix}-city-field">
+        <label for="${prefix}-city">城市</label>
+        <select id="${prefix}-city"></select>
+      </div>
+      <div class="field" id="${prefix}-custom-tz-field" style="display:none;">
+        <label for="${prefix}-custom-tz">IANA 时区</label>
+        <input type="text" id="${prefix}-custom-tz" value="Asia/Shanghai">
+      </div>
+      <div class="field" id="${prefix}-custom-lng-field" style="display:none;">
+        <label for="${prefix}-custom-lng">精确经度（东正西负）</label>
+        <input type="number" id="${prefix}-custom-lng" step="any" value="116.4">
+      </div>
+    </div>
+  </div>`;
+}
+
+function hezuoError(msg) { const el = $("hezuo-error"); el.textContent = msg; el.style.display = "block"; }
+function hezuoClearError() { $("hezuo-error").style.display = "none"; }
+
+function buildHezuoHtml(h, nameA, nameB) {
+  const dimCard = (title, d, desc) => `<div class="hehun-dim">
+    <div class="dn">${title}</div>
+    <div class="ds">${d.score} 分</div>
+    <div class="dt">${desc}</div>
+  </div>`;
+  const y = h.dims.yongshen;
+  let yongTxt;
+  if (y.neutral) yongTxt = "中和命局·该维度保守降档";
+  else if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
+  else if (y.aFoxiangB) yongTxt = "甲方能补乙方所需";
+  else if (y.bFoxiangA) yongTxt = "乙方能补甲方所需";
+  else yongTxt = "喜用神互补较弱";
+  const g = h.dims.geju;
+  let gejuDesc;
+  if (g.pureA !== "非纯" && g.pureB !== "非纯" && g.pureA !== g.pureB) gejuDesc = "纯阳配纯阴 · 阴阳调和";
+  else if (g.pureA === "纯阳" && g.pureB === "纯阳") gejuDesc = "双方纯阳 · 刚烈需柔";
+  else if (g.pureA === "纯阴" && g.pureB === "纯阴") gejuDesc = "双方纯阴 · 内敛需通";
+  else if (g.pureA !== "非纯" || g.pureB !== "非纯") gejuDesc = "一方纯命 · 需调济";
+  else gejuDesc = "常规格局 · 无偏枯";
+  const bj = h.dims.bijie;
+  let bjTxt;
+  if (bj.weakA && bj.weakB) bjTxt = "双方身弱 · 团队共赢";
+  else if (bj.strongA && bj.strongB) bjTxt = "双方身强 · 易争主导";
+  else if ((bj.weakA && bj.strongB) || (bj.strongA && bj.weakB)) bjTxt = "一强一弱 · 互补分工";
+  else if (bj.weakA || bj.weakB) bjTxt = "一方身弱 · 平稳互补";
+  else if (bj.strongA || bj.strongB) bjTxt = "一方身强 · 需控主导";
+  else bjTxt = "双方中和 · 平稳搭档";
+  const person = (label, p) => `<div class="hehun-person">
+    <div class="pn">${label}</div>
+    <div class="pv">
+      日主：<b>${p.ri_zhu}</b>（${p.me_x}）<br>
+      生肖：${p.year_zhi}${SX[p.year_zhi]}（年支）<br>
+      比劫占比：${(p.bijie * 100).toFixed(0)}%<br>
+      最旺五行：${p.top.join("、")}<br>
+      格局：${p.pure}
+    </div>
+  </div>`;
+  return `
+    <div class="hehun-score-banner">
+      <div class="hehun-score-num">${h.score}</div>
+      <div class="hehun-score-meta">
+        <div class="lv">${h.level}</div>
+        <div class="vd">${h.verdict}</div>
+      </div>
+    </div>
+    <div class="hehun-dims">
+      ${dimCard("① 生肖合冲（10分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
+      ${dimCard("② 日主生克·五合（20分）", h.dims.rigan, h.dims.rigan.rel.text)}
+      ${dimCard("③ 比劫互动（25分）", h.dims.bijie, bjTxt)}
+      ${dimCard("④ 五行互补（15分）", h.dims.hubu, `互补 ${h.dims.hubu.complement} 项 · 同类重合 ${h.dims.hubu.overlap} 项`)}
+      ${dimCard("⑤ 喜用神互补（20分）", h.dims.yongshen, yongTxt)}
+      ${dimCard("⑥ 格局阴阳（10分）", h.dims.geju, gejuDesc)}
+    </div>
+    <div class="hehun-info">
+      ${person(nameA, h.a)}
+      ${person(nameB, h.b)}
+    </div>
+    <div class="hehun-analysis">
+      <div class="ha-title">详细解析</div>
+      <p class="ha-summary">${h.analysis.summary}</p>
+      <div class="ha-item"><span class="ha-tag">① 生肖</span>${h.analysis.shengxiao}</div>
+      <div class="ha-item"><span class="ha-tag">② 日主</span>${h.analysis.rigan}</div>
+      <div class="ha-item"><span class="ha-tag">③ 比劫互动</span>${h.analysis.bijie}</div>
+      <div class="ha-item"><span class="ha-tag">④ 五行互补</span>${h.analysis.hubu}</div>
+      <div class="ha-item"><span class="ha-tag">⑤ 喜用神</span>${h.analysis.yongshen}</div>
+      <div class="ha-item"><span class="ha-tag">⑥ 格局</span>${h.analysis.geju}</div>
+    </div>
+    <div class="hehun-disclaimer">⚠️ 合作契合度为民俗文化内容，无科学依据，评分仅供娱乐参考，不构成任何合作或职业建议。</div>`;
+}
+
+$("hezuo-grid").innerHTML = partnerSideHTML("hz-a", "甲方", "male", { year: 1990, month: 6, day: 15, hour: 12 }) + partnerSideHTML("hz-b", "乙方", "female", { year: 1992, month: 9, day: 20, hour: 10 });
+initHehunLocation("hz-a");
+initHehunLocation("hz-b");
+["hz-a", "hz-b"].forEach(prefix => {
+  $(prefix + "-country").addEventListener("change", () => hehunOnCountryChange(prefix));
+  $(prefix + "-province").addEventListener("change", () => hehunRenderChinaCities(prefix));
+});
+
+$("btn-hezuo").addEventListener("click", function () {
+  hezuoClearError();
+  try {
+    const A = readHehunSide("hz-a"), B = readHehunSide("hz-b");
+    if (A.error) { hezuoError("❌ 甲方：" + A.error.replace(/^❌\s*/, "")); return; }
+    if (B.error) { hezuoError("❌ 乙方：" + B.error.replace(/^❌\s*/, "")); return; }
+    const ea = validateHehunSide(A, "甲方"), eb = validateHehunSide(B, "乙方");
+    if (ea) { hezuoError("❌ " + ea); return; }
+    if (eb) { hezuoError("❌ " + eb); return; }
+    const resA = ENGINE.execute_global_fortune_engine(A.year, A.month, A.day, A.hour, A.minute, A.lng, A.tz, 1, 0);
+    const resB = ENGINE.execute_global_fortune_engine(B.year, B.month, B.day, B.hour, B.minute, B.lng, B.tz, 1, 0);
+    const repA = ENGINE.generate_report(resA);
+    const repB = ENGINE.generate_report(resB);
+    const h = ENGINE.computeHezuo(resA, repA, resB, repB);
+    const gA = A.gender === "male" ? "男方" : "女方";
+    const gB = B.gender === "male" ? "男方" : "女方";
+    $("hezuo-result").innerHTML = buildHezuoHtml(h, "甲方（" + gA + "）", "乙方（" + gB + "）");
+    $("hezuo-result").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    hezuoError("❌ 合作测算失败：" + (e && e.message ? e.message : e));
+  }
 });
 </script>
 </body>
