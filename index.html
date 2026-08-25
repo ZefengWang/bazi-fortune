@@ -304,7 +304,7 @@
       <div class="field" id="custom-tz-field" style="display:none;">
         <label for="custom-tz">IANA 时区</label>
         <input type="text" id="custom-tz" placeholder="如 America/New_York" value="Asia/Shanghai">
-        <span class="hint">填 IANA 时区标识；若您输入的时间处于夏令时期间，请在下方的"夏令时"选项中选择"是"</span>
+        <span class="hint">填 IANA 时区标识；若您输入的时间处于夏令时期间，请选择"夏令时"为"是"</span>
       </div>
       <div class="field" id="custom-lng-field" style="display:none;">
         <label for="custom-lng">精确经度（东正西负）</label>
@@ -498,7 +498,7 @@
   </div>
 
   <footer>
-    <div>本页面由 Python 命理引擎逐行移植为前端 JavaScript 实现，并升级为「节气定月 / 时区换算 / 藏干身强弱」高精度版本。</div>
+    <div>本页面为前端 JavaScript 实现的高精度排盘引擎，支持节气定月、时区换算、藏干身强弱等核心算法。</div>
     <div class="warn">⚠️ 仅供学习研究使用 · 禁止任何商业用途 · 结果不构成任何建议</div>
   </footer>
 </div>
@@ -629,7 +629,7 @@ function buildDayunHtml(result, report) {
   const gender = document.getElementById("gender").value;
   const dy = ENGINE.computeDayunAndLiuNian(result, report, gender);
   const dirTxt = dy.forward ? "顺排" : "逆排";
-  const qy = `起运：约 <b>${dy.qi_yun_age.toFixed(1)} 岁</b>（${dirTxt}）　大运以约 ${dy.qi_yun_date || "--"} 起换运`;
+  const qy = `起运：约 <b>${dy.qi_yun_age.toFixed(1)} 岁</b>（${dirTxt}）　大运以约 ${dy.qi_yun_date || "--"} 起运`;
   const items = dy.dayun.map(d => {
     const sd = ENGINE.SHISHEN_DETAILS[d.shishen];
     const brief = sd ? sd["含义"] : "";
@@ -661,7 +661,7 @@ function buildLiuNianHtml(result, report, year) {
     <div class="v">流年以立春换年。天干代表当年的主要趋势、外在显性力量；地支代表该年隐藏的资源、环境与根基。</div>
     <div class="v"><b>天干 ${l.gan}（${ssGan}）</b>：${dGan ? dGan["含义"] : ""}</div>
     <div class="v"><b>地支 ${l.zhi}（${ssZhi}）</b>：${dZhi ? dZhi["含义"] : ""}</div>
-    <div class="v"><b>行动建议</b>：以${l.gan}${l.zhi}所对应十神（${ssGan}/${ssZhi}）对比喜用方向【${yong}】，五行生克趋吉则可大胆作为，冲克泄耗则宜稳中求进。</div>
+    <div class="v"><b>行动建议</b>：以${l.gan}${l.zhi}所对应十神（${ssGan}/${ssZhi}）对比喜用方向【${yong}】：若该年十神正合喜用，可大胆作为、把握机遇；若与喜用相冲相克，则宜稳中求进、谨慎决策。</div>
   </div>`;
 }
 
@@ -685,11 +685,14 @@ function buildMarriageCareerHtml(result, report) {
 /* 把喜用神方向翻译成大白话 */
 function plainYongShen(yong) {
   if (!yong) return "顺势而为";
+  if (yong.indexOf("克泄耗") >= 0) return "日主偏强，宜以官杀、食伤、财星来平衡，适合在规则明确、有挑战、能创造价值的领域发挥";
+  if (yong.indexOf("生扶") >= 0) return "日主偏弱，宜以印星、比劫来生扶，适合学习进修、借助团队与贵人，先打牢根基再图发展";
   if (yong.indexOf("官杀") >= 0) return "适合被管束、有压力、有规则的环境，越有挑战越能发挥";
   if (yong.indexOf("食伤") >= 0) return "适合发挥才华、表达自我、靠本事吃饭";
   if (yong.indexOf("财") >= 0) return "适合求财、经营、务实赚钱的路子";
   if (yong.indexOf("印") >= 0) return "适合学习、进修、靠知识和贵人相助";
   if (yong.indexOf("比劫") >= 0) return "适合靠朋友、团队、自己打拼";
+  if (yong.indexOf("五行流通") >= 0) return "五行流通、顺势而为，即命局各五行力量较为均衡、彼此生助，宜顺应自身节奏稳步发展，不宜强行改变方向";
   return "顺势而为";
 }
 
@@ -717,7 +720,7 @@ function buildPlainSummary(result, report) {
   const luckTxt = good > bad
     ? `一生大运以吉运为主（${good} 步吉、${bad} 步凶），整体运势向上，把握好运能事半功倍。`
     : (bad > good
-      ? `一生大运凶运偏多（${good} 步吉、${bad} 步凶），需稳扎稳打，逆境中蓄力，等待转运。`
+      ? `一生大运凶运偏多（${good} 步吉、${bad} 步凶），需稳扎稳打，逆境中蓄力，等待时机。`
       : `一生大运吉凶参半（${good} 步吉、${bad} 步凶），起伏中见机遇，关键在于顺势而为。`);
 
   // 喜用神白话
@@ -730,7 +733,7 @@ function buildPlainSummary(result, report) {
        <div class="plain-item"><span class="plain-tag">适合做什么</span><div class="plain-body">${careerPlain}</div></div>
        <div class="plain-item"><span class="plain-tag">感情婚姻</span><div class="plain-body">${marriagePlain}</div></div>
        <div class="plain-item"><span class="plain-tag">一生运势</span><div class="plain-body">${luckTxt}</div></div>
-       <div class="plain-item"><span class="plain-tag">开运方向</span><div class="plain-body">${yongPlain}。多往这个方向努力，运势会更顺。</div></div>
+       <div class="plain-item"><span class="plain-tag">喜用方向</span><div class="plain-body">${yongPlain}。多往这个方向努力，更容易发挥自身优势。</div></div>
      </div>`;
 }
 
