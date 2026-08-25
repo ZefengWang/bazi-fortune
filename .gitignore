@@ -1,2 +1,4 @@
 .session_backup/
 *.png
+!favicon.png
+!apple-touch-icon.png
