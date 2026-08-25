@@ -921,7 +921,8 @@ function buildHehunHtml(h, nameA, nameB) {
   </div>`;
   const y = h.dims.yongshen;
   let yongTxt;
-  if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
+  if (y.neutral) yongTxt = "中和命局·该维度保守降档";
+  else if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
   else if (y.aFoxiangB) yongTxt = "甲方能补乙方所需";
   else if (y.bFoxiangA) yongTxt = "乙方能补甲方所需";
   else yongTxt = "喜用神互补较弱";

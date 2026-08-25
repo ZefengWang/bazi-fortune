@@ -1009,6 +1009,10 @@ function hehunHubuText(hubu, topA, topB) {
 /* 喜用神互补度的白话解析 */
 function hehunYongText(dimY, topA, topB) {
   const a = dimY.aFoxiangB, b = dimY.bFoxiangA;
+  if (dimY.neutral) {
+    const base = (a && b) ? "本来喜用互旺" : (a || b) ? "本来存在单向补益" : "本无补益";
+    return `一方或双方命局为「中和」，喜用方向不明确，此维度按保守口径降档计分（${base}），避免虚高。`;
+  }
   if (a && b) return `甲方最旺的「${topA[0]}」恰是乙方命局所需，乙方最旺的「${topB[0]}」也恰是甲方所需，双方喜用神互相成就，是合婚中难得的「互相旺对方」组合。`;
   if (a) return `甲方最旺的「${topA[0]}」正是乙方命局所缺所需，甲能补乙，能给对方带来实质助力。`;
   if (b) return `乙方最旺的「${topB[0]}」正是甲方命局所缺所需，乙能补甲，能给对方带来实质助力。`;
@@ -1065,6 +1069,16 @@ function computeHehun(resA, repA, resB, repB) {
   else if (aErxiangB || bErxiangA) yongScore = 7;
   else yongScore = 4;
 
+  // 中和命局（0.45 < ratio < 0.55）喜用方向不明确，该维度整体降一档，避免评分虚高
+  const neutralA = repA.strength.ratio > 0.45 && repA.strength.ratio < 0.55;
+  const neutralB = repB.strength.ratio > 0.45 && repB.strength.ratio < 0.55;
+  const neutral = neutralA || neutralB;
+  if (neutral) {
+    if (yongScore === 15) yongScore = 10;
+    else if (yongScore === 10) yongScore = 7;
+    else if (yongScore === 7) yongScore = 4;   // 4 为下限，保持不变
+  }
+
   const score = sxScore + rgScore + hgScore + buScore + yongScore;
   let level, verdict;
   if (score >= 85) { level = "上等婚"; verdict = "天作之合，双方生肖、日主与婚姻宫高度契合，五行互补，情感根基深厚。"; }
@@ -1080,7 +1094,7 @@ function computeHehun(resA, repA, resB, repB) {
     rigan:    hehunWuxingText(rgRel, zdx, ydx),
     hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
     hubu:     hehunHubuText({ complement, conflict }, topA, topB),
-    yongshen: hehunYongText({ aFoxiangB, bFoxiangA }, topA, topB)
+    yongshen: hehunYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB)
   };
 
   return {
@@ -1092,7 +1106,7 @@ function computeHehun(resA, repA, resB, repB) {
       rigan:    { score: rgScore, rel: rgRel },
       hunyin:   { score: hgScore, rel: hgRel },
       hubu:     { score: buScore, complement, conflict },
-      yongshen: { score: yongScore, aFoxiangB, bFoxiangA }
+      yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral }
     }
   };
 }
