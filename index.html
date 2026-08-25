@@ -189,6 +189,12 @@
   .hehun-person { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--text); }
   .hehun-person .pn { font-weight: 700; color: var(--gold-2); margin-bottom: 6px; }
   .hehun-person .pv { line-height: 1.9; }
+  .hehun-analysis { margin-top: 14px; background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 12px; padding: 16px 18px; }
+  .hehun-analysis .ha-title { font-size: 15px; font-weight: 700; color: var(--gold-2); margin-bottom: 10px; border-left: 3px solid var(--gold); padding-left: 10px; }
+  .hehun-analysis .ha-summary { font-size: 14px; color: var(--text); margin-bottom: 14px; line-height: 1.9; }
+  .hehun-analysis .ha-item { font-size: 14px; color: var(--text); line-height: 1.9; margin-bottom: 10px; }
+  .hehun-analysis .ha-item:last-child { margin-bottom: 0; }
+  .hehun-analysis .ha-tag { display: inline-block; font-size: 12px; color: var(--gold); background: rgba(232,195,122,0.12); border: 1px solid rgba(232,195,122,0.28); border-radius: 6px; padding: 1px 8px; margin-right: 8px; font-weight: 700; }
   .hehun-disclaimer { margin-top: 12px; font-size: 12.5px; color: #d9b7b1; }
 
   footer { text-align: center; margin-top: 44px; color: var(--muted); font-size: 12.5px; }
@@ -946,6 +952,15 @@ function buildHehunHtml(h, nameA, nameB) {
     <div class="hehun-info">
       ${person(nameA, h.a)}
       ${person(nameB, h.b)}
+    </div>
+    <div class="hehun-analysis">
+      <div class="ha-title">详细解析</div>
+      <p class="ha-summary">${h.analysis.summary}</p>
+      <div class="ha-item"><span class="ha-tag">① 生肖</span>${h.analysis.shengxiao}</div>
+      <div class="ha-item"><span class="ha-tag">② 日主</span>${h.analysis.rigan}</div>
+      <div class="ha-item"><span class="ha-tag">③ 婚姻宫</span>${h.analysis.hunyin}</div>
+      <div class="ha-item"><span class="ha-tag">④ 五行互补</span>${h.analysis.hubu}</div>
+      <div class="ha-item"><span class="ha-tag">⑤ 喜用神</span>${h.analysis.yongshen}</div>
     </div>
     <div class="hehun-disclaimer">⚠️ 合婚为民俗文化内容，无科学依据，评分仅供娱乐参考，不构成任何婚恋建议。</div>`;
 }

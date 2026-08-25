@@ -968,6 +968,50 @@ function topWuxings(power) {
   return ELEMENT_ORDER.slice().sort((a, b) => (power[b] || 0) - (power[a] || 0)).slice(0, 2);
 }
 
+/* ---------- 合婚详细解析文案生成 ---------- */
+
+/* 生肖 / 婚姻宫（地支）关系的白话解析 */
+function hehunZhiText(rel, a, b, scope) {
+  switch (rel.type) {
+    case "liuhe":  return `${scope}「${a}」与「${b}」为六合，地支相合中最吉的一种，彼此性情相投、互相吸引，相处轻松愉悦，感情根基稳定。`;
+    case "sanhe":  return `${scope}「${a}」与「${b}」为三合，彼此呼应、志趣相近，配合默契，能互相成就、共同进步。`;
+    case "clash":  return `${scope}「${a}」与「${b}」为六冲，正面相冲，性格与节奏差异较大，容易起争执、闹矛盾，需要双方多磨合、多忍让。`;
+    case "harm":   return `${scope}「${a}」与「${b}」为相害，暗中相妨，表面平静、内里易生隔阂，需坦诚沟通、及时化解误会。`;
+    case "punish": return `${scope}「${a}」与「${b}」为相刑，长期相处易有摩擦与内耗，需彼此包容、少较真。`;
+    default:       return `${scope}「${a}」与「${b}」不冲不合，关系平和，虽无大吉大利，也没有明显冲克，顺其自然即可。`;
+  }
+}
+
+/* 日主五行生克的白话解析 */
+function hehunWuxingText(rel, zdx, ydx) {
+  switch (rel.type) {
+    case "sheng": return `甲方日主属${zdx}、乙方日主属${ydx}，${rel.text}，五行相生，一方能滋养另一方，付出与回馈形成良性循环，相处舒适融洽。`;
+    case "same":  return `双方日主同属${zdx}，五行比和，志趣相投、心有灵犀、默契十足；但同类相叠也可能固执己见，稍缺一点互补调剂。`;
+    case "ke":    return `甲方日主属${zdx}、乙方日主属${ydx}，${rel.text}，五行相克，相处中一方偏强势、一方易有压力，需把握主导分寸、互相尊重。`;
+    default:      return `双方日主五行平和，无明显的生克牵制，关系独立又和缓。`;
+  }
+}
+
+/* 五行能量互补度的白话解析 */
+function hehunHubuText(hubu, topA, topB) {
+  let s = `甲方最旺五行为「${topA.join("、")}」，乙方最旺五行为「${topB.join("、")}」。`;
+  if (hubu.complement >= 2) s += `双方五行强弱明显错位、彼此补足（互补 ${hubu.complement} 项），能各取所长、互相扶持，是相当理想的搭配。`;
+  else if (hubu.complement === 1) s += `双方有 ${hubu.complement} 项五行互补，能起到一定的取长补短效果。`;
+  else s += `双方五行缺少互补，各自偏强的部分重叠，容易出现争夺或互相不理解。`;
+  if (hubu.conflict >= 2) s += `且有 ${hubu.conflict} 项同强同弱，需特别注意磨合经营。`;
+  else if (hubu.conflict === 1) s += `有 ${hubu.conflict} 项同强同弱，稍加注意即可。`;
+  return s;
+}
+
+/* 喜用神互补度的白话解析 */
+function hehunYongText(dimY, topA, topB) {
+  const a = dimY.aFoxiangB, b = dimY.bFoxiangA;
+  if (a && b) return `甲方最旺的「${topA[0]}」恰是乙方命局所需，乙方最旺的「${topB[0]}」也恰是甲方所需，双方喜用神互相成就，是合婚中难得的「互相旺对方」组合。`;
+  if (a) return `甲方最旺的「${topA[0]}」正是乙方命局所缺所需，甲能补乙，能给对方带来实质助力。`;
+  if (b) return `乙方最旺的「${topB[0]}」正是甲方命局所缺所需，乙能补甲，能给对方带来实质助力。`;
+  return `双方喜用神互补较弱，各自的强势之处并非对方所需，难以形成「补益」效应。`;
+}
+
 /* 合婚主函数：入参为双方的 execute 结果 + generate_report 结果 */
 function computeHehun(resA, repA, resB, repB) {
   const zdx = repA.me_x;               // 甲方日主五行
@@ -1026,8 +1070,18 @@ function computeHehun(resA, repA, resB, repB) {
   else if (score >= 40) { level = "中下等婚"; verdict = "契合度偏低，冲克较多，需双方付出更多耐心与理解去经营。"; }
   else { level = "下等婚"; verdict = "冲克较重，感情易生波折，若同居共处需格外用心化解分歧。"; }
 
+  // —— 详细白话解析 ——
+  const analysis = {
+    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${zxz}，乙方日主「${resB.ri_zhu}」属${ydx}、生肖${yxz}，五维综合 ${score} 分，判为「${level}」。${verdict}`,
+    shengxiao: hehunZhiText(sxRel, zxz, yxz, "年支生肖"),
+    rigan:    hehunWuxingText(rgRel, zdx, ydx),
+    hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
+    hubu:     hehunHubuText({ complement, conflict }, topA, topB),
+    yongshen: hehunYongText({ aFoxiangB, bFoxiangA }, topA, topB)
+  };
+
   return {
-    score, level, verdict,
+    score, level, verdict, analysis,
     a: { ri_zhu: resA.ri_zhu, me_x: zdx, year_zhi: zxz, day_zhi: zhdz, power: pa, top: topA, yong: yongA },
     b: { ri_zhu: resB.ri_zhu, me_x: ydx, year_zhi: yxz, day_zhi: yhdz, power: pb, top: topB, yong: yongB },
     dims: {
