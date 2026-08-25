@@ -906,12 +906,13 @@ function elementShishenGroup(me_x) {
 /* =====================================================================
  * 9. 八字合婚（学习演示，仅供娱乐与研究，不构成任何婚恋建议）
  * ---------------------------------------------------------------------
- * 基于双方四柱的客观可计算指标综合评分，五个维度：
- *   ① 年支（生肖）合冲      —— 占比 25 分
- *   ② 日干（日主）五行生克  —— 占比 20 分
- *   ③ 日支（婚姻宫）合冲    —— 占比 25 分
+ * 基于双方四柱的客观可计算指标综合评分，六个维度（合计 100 分）：
+ *   ① 年支（生肖）合冲      —— 占比 10 分（网上主流权重下生肖占比最低，故降权）
+ *   ② 日干（日主）五合生克  —— 占比 25 分（合婚最重日主）
+ *   ③ 日支（婚姻宫）合冲    —— 占比 20 分
  *   ④ 五行能量互补度        —— 占比 15 分
- *   ⑤ 喜用神互补度          —— 占比 15 分
+ *   ⑤ 喜用神互补度          —— 占比 20 分
+ *   ⑥ 格局阴阳（纯阳/纯阴） —— 占比 10 分
  * 说明：合婚为传统民俗文化内容，无科学依据，评分仅供娱乐参考。
  * ===================================================================== */
 
@@ -1048,23 +1049,23 @@ function computeHehun(resA, repA, resB, repB) {
   const zhdz = resA.day_dz;            // 甲方婚姻宫（日支）
   const yhdz = resB.day_dz;            // 乙方婚姻宫
 
-  // —— ① 生肖（年支）满分 20 ——
+  // —— ① 生肖（年支）满分 10（网上主流权重下生肖占比最低，故降权）——
   const sxRel = branchRelationHe(zxz, yxz);
-  const sxScore = sxRel.type === "liuhe" ? 20 : sxRel.type === "sanhe" ? 15 : sxRel.type === "normal" ? 10 : sxRel.type === "clash" ? 0 : 5;
+  const sxScore = sxRel.type === "liuhe" ? 10 : sxRel.type === "sanhe" ? 8 : sxRel.type === "normal" ? 6 : sxRel.type === "clash" ? 0 : 3;
 
-  // —— ② 日主（日干）：先判天干五合（有情之合），再判五行生克，满分 20 ——
+  // —— ② 日主（日干）：先判天干五合（有情之合），再判五行生克，满分 25（合婚最重日主）——
   let rgRel, rgScore;
   if (HE_TIANGAN_HE[tgA] === tgB) {
     rgRel = { type: "he", label: "天干相合", good: true, strong: true, text: `${tgA}${tgB}为天干五合，有情之合` };
-    rgScore = 20;
+    rgScore = 25;
   } else {
     rgRel = wuxingRelationHe(zdx, ydx);
-    rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 13 : 5;
+    rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 15 : 6;
   }
 
   // —— ③ 日支（婚姻宫）满分 20 ——
   const hgRel = branchRelationHe(zhdz, yhdz);
-  const hgScore = hgRel.type === "liuhe" ? 20 : hgRel.type === "sanhe" ? 15 : hgRel.type === "normal" ? 10 : hgRel.type === "clash" ? 0 : 5;
+  const hgScore = hgRel.type === "liuhe" ? 20 : hgRel.type === "sanhe" ? 16 : hgRel.type === "normal" ? 12 : hgRel.type === "clash" ? 3 : 7;
 
   // —— ④ 五行能量互补 ——
   const pa = repA.elements_power, pb = repB.elements_power;
@@ -1077,8 +1078,8 @@ function computeHehun(resA, repA, resB, repB) {
     if ((deva > 0.05 && devb < -0.05) || (deva < -0.05 && devb > 0.05)) complement++;
     else if (Math.abs(deva) > 0.05 && Math.abs(devb) > 0.05 && (deva > 0) === (devb > 0)) overlap++;
   });
-  let buScore = 4 + complement * 3;                    // 基础 4，每补 1 项 +3
-  buScore = Math.max(4, Math.min(15, Math.round(buScore)));  // 同类重合仅说明缺互补，按冲突折算造成相同八字误判，故下限保 4
+  let buScore = 8 + complement * 2;                    // 基础 8（网上视"平和/无明显互补"为可接受，不把缺互补当大扣），每补 1 项 +2
+  buScore = Math.max(8, Math.min(15, Math.round(buScore)));  // 同类重合仅说明缺互补，下限保 8，不再压到低分
 
   // —— ⑤ 喜用神互补 ——
   const yongA = yongWuxings(zdx, repA.strength.ratio);
@@ -1089,19 +1090,19 @@ function computeHehun(resA, repA, resB, repB) {
   const aErxiangB = yongB.some(w => topA[1] === w);
   const bErxiangA = yongA.some(w => topB[1] === w);
   let yongScore;
-  if ((aFoxiangB && bFoxiangA)) yongScore = 15;         // 双向强互补
-  else if (aFoxiangB || bFoxiangA || (aErxiangB && bErxiangA)) yongScore = 10; // 单向或次强双向
-  else if (aErxiangB || bErxiangA) yongScore = 7;
-  else yongScore = 4;
+  if ((aFoxiangB && bFoxiangA)) yongScore = 20;         // 双向强互补
+  else if (aFoxiangB || bFoxiangA || (aErxiangB && bErxiangA)) yongScore = 14; // 单向或次强双向
+  else if (aErxiangB || bErxiangA) yongScore = 10;
+  else yongScore = 6;
 
-  // 中和命局（0.45 < ratio < 0.55）喜用方向不明确，该维度整体降一档，避免评分虚高
+  // 中和命局（0.45 < ratio < 0.55）喜用方向不明确，该维度降一档，避免评分虚高
   const neutralA = repA.strength.ratio > 0.45 && repA.strength.ratio < 0.55;
   const neutralB = repB.strength.ratio > 0.45 && repB.strength.ratio < 0.55;
   const neutral = neutralA || neutralB;
   if (neutral) {
-    if (yongScore === 15) yongScore = 10;
-    else if (yongScore === 10) yongScore = 7;
-    else if (yongScore === 7) yongScore = 4;   // 4 为下限，保持不变
+    if (yongScore === 20) yongScore = 14;
+    else if (yongScore === 14) yongScore = 10;
+    else if (yongScore === 10) yongScore = 8;   // 8 为下限，不再因中和压到过低
   }
 
   // —— ⑥ 格局阴阳（四柱纯阳/纯阴）满分 10 ——

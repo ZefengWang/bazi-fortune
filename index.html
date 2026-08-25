@@ -501,7 +501,7 @@
 </div>
 
 <script src="cities-data.js?v=4"></script>
-<script src="engine.js?v=7"></script>
+<script src="engine.js?v=8"></script>
 <script>
 "use strict";
 const ENGINE = window.BaziEngine;
@@ -1033,11 +1033,11 @@ function buildHehunHtml(h, nameA, nameB) {
       </div>
     </div>
     <div class="hehun-dims">
-      ${dimCard("① 生肖合冲（20分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
-      ${dimCard("② 日主生克·五合（20分）", h.dims.rigan, h.dims.rigan.rel.text)}
+      ${dimCard("① 生肖合冲（10分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
+      ${dimCard("② 日主生克·五合（25分）", h.dims.rigan, h.dims.rigan.rel.text)}
       ${dimCard("③ 婚姻宫合冲（20分）", h.dims.hunyin, h.dims.hunyin.rel.text)}
       ${dimCard("④ 五行互补（15分）", h.dims.hubu, `互补 ${h.dims.hubu.complement} 项 · 同类重合 ${h.dims.hubu.overlap} 项`)}
-      ${dimCard("⑤ 喜用神互补（15分）", h.dims.yongshen, yongTxt)}
+      ${dimCard("⑤ 喜用神互补（20分）", h.dims.yongshen, yongTxt)}
       ${dimCard("⑥ 格局阴阳（10分）", h.dims.geju, gejuDesc)}
     </div>
     <div class="hehun-info">
