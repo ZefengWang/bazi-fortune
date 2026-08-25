@@ -879,9 +879,9 @@ function renderResult(result, report, loc) {
   // 婚姻与事业
   buildMarriageCareerHtml(result, report);
 
-  // 大运 + 流年（默认流年预填出生当年）
+  // 大运 + 流年（默认流年预填当前年份）
   buildDayunHtml(result, report);
-  const curYear = Math.max(result.original_year, 1900);
+  const curYear = new Date().getFullYear();
   const lyYear = $("liunian-year").value || curYear.toString();
   $("liunian-year").value = lyYear;
   $("liunian-result").innerHTML = buildLiuNianHtml(result, report, parseInt(lyYear, 10));
