@@ -1333,18 +1333,19 @@ $("btn-hezuo").addEventListener("click", function () {
 /* ---------- 返回主页恢复上次排盘 ---------- */
 (function () {
   function restoreLastResult() {
-    // 区分刷新/首次加载 与 后退/前进：仅浏览器"后退/前进"(back_forward)才恢复上次结果；
-    // 主动刷新(reload)或全新打开(navigate)一律清空，保持表单与结果空白。
-    let navType = "navigate";
+    // 只在"主动刷新"(reload)时清空：主动刷新代表用户想重新开始，应清掉上次结果。
+    // 其余来源——浏览器后退/前进(back_forward)或从帮助页等跳回(navigate)——都应恢复上次排盘，
+    // 保证"从帮助页返回时结果还在"这一体验。判别失败时默认不清空（优先保住返回体验）。
+    let navType = "";
     try {
       if (window.performance && window.performance.getEntriesByType) {
         const entries = window.performance.getEntriesByType("navigation");
-        if (entries && entries.length) navType = entries[0].type || "navigate";
+        if (entries && entries.length) navType = entries[0].type || "";
       }
-    } catch (e) { /* 忽略 */ }
-    if (navType !== "back_forward") {
+    } catch (e) { navType = ""; }
+    if (navType === "reload") {
       try { sessionStorage.removeItem("bazi_last_result"); } catch (e) { /* 忽略 */ }
-      return; // 刷新或首次打开：不恢复，保持清空
+      return; // 主动刷新：清空，不恢复
     }
     let saved = null;
     try { saved = JSON.parse(sessionStorage.getItem("bazi_last_result") || "null"); } catch (e) { /* 忽略 */ }
