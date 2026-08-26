@@ -761,6 +761,8 @@ function computeMarriageAndCareer(result, report, gender) {
   const sorted = Object.keys(group).sort((a, b) => group[b] - group[a]);
   const main = sorted[0];
   const mainCount = group[main];
+  const second = sorted[1];
+  const secondCount = group[second] || 0;
 
   // 五行→现代行业（第 1 层：行业方向，参考主流"最旺五行定行业"）
   const ELEMENT_INDUSTRY = {
@@ -819,6 +821,29 @@ function computeMarriageAndCareer(result, report, gender) {
       careerAdvice = `比劫旺者宜独立开拓，合伙需谨慎分利；身弱则喜比劫帮扶，可借团队之力共同发展。`;
   }
 
+  // —— 主/次类型（一等判定）：当第二名与第一名相对差距≤12%（即几乎持平）时，
+  //    以"主类型 + 次类型"呈现，对齐命理"多星并旺仍分主次、不并列出道"的通行做法。
+  const CAREER_TYPE_BY_GROUP = {
+    "官杀": "管理权力型", "财": "财富经营型",
+    "食伤": "才华技术型", "印": "学术文化型", "比劫": "竞争合伙型"
+  };
+  const CAREER_SUB_ANALYSIS = {
+    "官杀": "次旺于官杀，管理、权威与规则的场合亦可胜任，宜在团队或组织内发挥统筹与决断作用，可作主业之外的管理向拓展。",
+    "财": "次旺于财，经商、金融、商务等价值变现的场合亦有可为，适合作为副业、资源运营或跨界求财的补充方向。",
+    "食伤": "次旺于食伤，天生具备技术、创意与表达潜力，适合作为副业、跨界或靠才华变现的拓展方向，宜扬长补短。",
+    "印": "次旺于印，好学深思、重专业与口碑，适合进修深造、学术研究或顾问类工作，可作稳定的长期发展补充。",
+    "比劫": "次旺于比劫，独立自主、竞争意识强，宜借团队或合伙之力磨练个人硬实力，可作创业、销售等实战型补充。"
+  };
+  let careerTypeSub = "", careerTypeSubNote = "";
+  if (mainCount > 0 && secondCount > 0) {
+    // "差不多"判定：相对差距 ≤12%（即第二名占第一名 ≥88%），仅当真两星几乎持平、有明显主辅模糊时才提示次类型
+    const gap = (mainCount - secondCount) / mainCount;
+    if (gap <= 0.12) {
+      careerTypeSub = CAREER_TYPE_BY_GROUP[second] || "";
+      careerTypeSubNote = CAREER_SUB_ANALYSIS[second] || "";
+    }
+  }
+
   // —— 五行行业 + 喜用/中和 补充（对齐主流"五行定行业、喜用定最顺赛道"的三层结构）——
   const elDir = topEl && ELEMENT_INDUSTRY[topEl] ? ELEMENT_INDUSTRY[topEl] : null;
   const shiInds = SHISHEN_INDUSTRY[main] ? SHISHEN_INDUSTRY[main].inds : [];
@@ -836,7 +861,7 @@ function computeMarriageAndCareer(result, report, gender) {
 
   return {
     marriage: { spouseMain, spouseSide, spouseCount, spouseInStem, palace, palaceRelation, chonged, spouseIsYong, spouseFate, palaceTxt, spouseHelp },
-    career: { main, mainCount, careerType, careerAnalysis, careerAdvice, monthRelation: report ? report.month_relation : "",
+    career: { main, mainCount, careerType, careerTypeSub, careerTypeSubNote, careerAnalysis, careerAdvice, monthRelation: report ? report.month_relation : "",
       element: topEl, elementDir: elNote, roleDir: shiNote, yongNote,
       elementIndustries: elDir ? elDir.inds : [], roleIndustries: shiInds }
   };

@@ -727,7 +727,7 @@ function buildMarriageCareerHtml(result, report) {
      </div>
      <div class="detail-block">
       <div class="k">事业分析 · ${c.careerType}</div>
-      <div class="v">${c.careerAnalysis}<br><br>${c.roleDir ? c.roleDir + "<br><br>" : ""}${c.careerAdvice}</div>
+     <div class="v">${c.careerAnalysis}${c.careerTypeSub && c.careerTypeSubNote ? "<br><br><b>兼有类型 · " + c.careerTypeSub + "</b>：" + c.careerTypeSubNote : ""}<br><br>${c.roleDir ? c.roleDir + "<br><br>" : ""}${c.careerAdvice}</div>
     </div>`;
 }
 
@@ -757,7 +757,10 @@ function buildPlainSummary(result, report) {
   const character = tc ? tc["性格"] : "性格特质需结合全盘判断。";
 
   // 事业白话
-  const careerPlain = `${c.careerType}。${c.careerAnalysis.replace(/（\d+ 处）/, "")}${c.yongNote ? " " + c.yongNote : ""}`;
+  const careerSubPlain = c.careerTypeSub
+    ? `，另外你的${c.careerTypeSub}潜质也很明显，可作为副业、跨界或长远储备方向参考。`
+    : "";
+  const careerPlain = `${c.careerType}。${c.careerAnalysis.replace(/（\d+ 处）/, "")}${careerSubPlain}${c.yongNote ? " " + c.yongNote : ""}`;
 
   // 婚姻白话
   const marriagePlain = `${m.spouseFate}${m.palaceTxt}${m.spouseHelp}`;
