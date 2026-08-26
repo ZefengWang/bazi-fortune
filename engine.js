@@ -647,9 +647,10 @@ function computeDayunAndLiuNian(result, bz_report, gender) {
     const total_days = span;
     qi_yun_age = total_days / 3.0;
     qi_yun_year = bz_year + Math.floor(qi_yun_age);
-    // 精确起运公历日期（无闰余近似）
-    const qiJd = utc_jd + span * (forward ? 1 : 1);
-    const d = jdToDate(forward ? start : (nearestSolarTermJd(utc_jd, -1, bz_year) || start));
+    // 精确起运公历日期 = 出生公历时刻 + 起运年数(回归年) 后的那一天；
+    // 若该年出现闰日误差，由 jdToDate 的儒略日换算自动吸收。
+    const qiJd = utc_jd + qi_yun_age * 365.2422;
+    const d = jdToDate(qiJd);
     qi_yun_date = `${d.year}-${String(d.month).padStart(2,"0")}-${String(d.day).padStart(2,"0")}`;
   }
 
