@@ -610,15 +610,19 @@ function jdToDate(jd) {
 function nearestSolarTermJd(birth_jd, dir, bz_year) {
   // dir: 1 → 找出生点之后最近的节；-1 → 之前最近的节
   // 覆盖出生年前后若干年，保证能找到
+  // 注意：必须取"时间上最接近出生时刻"的节，而非遍历顺序里第一个——
+  // 否则逆排时一年最早的"立春"（i=0）若在前几年被扫到，会产生上千天伪跨度。
+  let after = null;   // 出生后最近节
+  let before = null;  // 出生前最近节
   for (let yr = bz_year - 2; yr <= bz_year + 2; yr++) {
     for (let i = 0; i < 24; i += 2) {          // 只取"节"（索引 0,2,4,...22）
       const term = solarTermUtJd(yr, i);
-      const gap = term - birth_jd;
-      if (dir === 1 && gap > 1e-4) return term;
-      if (dir === -1 && gap < -1e-4) return term;
+      const d = term - birth_jd;               // 负=出生前，正=出生后
+      if (d > 1e-4 && (after === null || Math.abs(d) < Math.abs(after - birth_jd))) after = term;
+      else if (d < -1e-4 && (before === null || Math.abs(d) < Math.abs(before - birth_jd))) before = term;
     }
   }
-  return null;
+  return dir === 1 ? after : before;
 }
 
 function computeDayunAndLiuNian(result, bz_report, gender) {
