@@ -1066,6 +1066,55 @@ function validateHehunSide(side, name) {
   return null;
 }
 
+/* 合婚 / 事业合盘：采集、回填、保存与恢复四侧输入（供"从帮助页返回"时结果不清空） */
+function collectHehunSide(prefix) {
+  const el = id => document.getElementById(prefix + id);
+  return {
+    gender: el("-gender").value, year: el("-year").value, month: el("-month").value,
+    day: el("-day").value, hour: el("-hour").value, minute: el("-minute").value,
+    country: el("-country").value, province: el("-province").value,
+    city: el("-city").value, district: el("-district").value,
+    tz: el("-custom-tz").value, lng: el("-custom-lng").value
+  };
+}
+function fillHehunSide(prefix, d) {
+  if (!d) return;
+  const el = id => document.getElementById(prefix + id);
+  const set = (id, v) => { const e = el(id); if (e && typeof v !== "undefined" && v !== "" && v !== null) e.value = v; };
+  set("-gender", d.gender);
+  set("-year", d.year); set("-month", d.month); set("-day", d.day);
+  set("-hour", d.hour); set("-minute", d.minute);
+  const country = d.country;
+  if (!country) return;
+  const countryEl = el("-country");
+  const opts = countryEl && countryEl.options ? Array.prototype.map.call(countryEl.options, o => o.value) : [];
+  if (opts.indexOf(country) < 0) return;
+  countryEl.value = country; countryEl.dispatchEvent(new Event("change")); // 触发省市/城市/自定义联动重建
+  if (country === "china") {
+    if (d.province) { el("-province").value = d.province; el("-province").dispatchEvent(new Event("change")); }
+    if (d.city) { el("-city").value = d.city; el("-city").dispatchEvent(new Event("change")); }
+    if (d.district) el("-district").value = d.district;
+  } else if (country !== "__custom__") {
+    if (d.city) el("-city").value = d.city;
+  } else {
+    if (d.tz) el("-custom-tz").value = d.tz;
+    if (d.lng) el("-custom-lng").value = d.lng;
+  }
+}
+function saveMarriageCoopInputs() {
+  const all = {};
+  ["hh-a", "hh-b", "hz-a", "hz-b"].forEach(p => { try { all[p] = collectHehunSide(p); } catch (e) { /* 忽略 */ } });
+  try { sessionStorage.setItem("bazi_hehun_inputs", JSON.stringify(all)); } catch (e) { /* 忽略 */ }
+}
+function restoreMarriageCoopInputs() {
+  let hh = null;
+  try { hh = JSON.parse(sessionStorage.getItem("bazi_hehun_inputs") || "null"); } catch (e) { /* 忽略 */ }
+  if (!hh || typeof hh !== "object") return;
+  ["hh-a", "hh-b", "hz-a", "hz-b"].forEach(p => { try { fillHehunSide(p, hh[p]); } catch (e) { /* 忽略 */ } });
+  const bh = document.getElementById("btn-hehun"); if (bh) bh.click();
+  const hz = document.getElementById("btn-hezuo"); if (hz) hz.click();
+}
+
 function hehunError(msg) { const el = $("hehun-error"); el.textContent = msg; el.style.display = "block"; }
 function hehunClearError() { $("hehun-error").style.display = "none"; }
 
@@ -1149,6 +1198,7 @@ $("btn-hehun").addEventListener("click", function () {
     const gA = A.gender === "male" ? "男方" : "女方";
     const gB = B.gender === "male" ? "男方" : "女方";
     $("hehun-result").innerHTML = buildHehunHtml(h, "甲方（" + gA + "）", "乙方（" + gB + "）");
+    saveMarriageCoopInputs();
     $("hehun-result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
     hehunError("❌ 合婚测算失败：" + (e && e.message ? e.message : e));
@@ -1324,6 +1374,7 @@ $("btn-hezuo").addEventListener("click", function () {
     const gA = A.gender === "male" ? "男方" : "女方";
     const gB = B.gender === "male" ? "男方" : "女方";
     $("hezuo-result").innerHTML = buildHezuoHtml(h, "甲方（" + gA + "）", "乙方（" + gB + "）");
+    saveMarriageCoopInputs();
     $("hezuo-result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
     hezuoError("❌ 合盘测算失败：" + (e && e.message ? e.message : e));
@@ -1345,6 +1396,7 @@ $("btn-hezuo").addEventListener("click", function () {
     } catch (e) { navType = ""; }
     if (navType === "reload") {
       try { sessionStorage.removeItem("bazi_last_result"); } catch (e) { /* 忽略 */ }
+      try { sessionStorage.removeItem("bazi_hehun_inputs"); } catch (e) { /* 忽略 */ }
       return; // 主动刷新：清空，不恢复
     }
     let saved = null;
@@ -1365,6 +1417,8 @@ $("btn-hezuo").addEventListener("click", function () {
     // 复用现有排盘管线：回填地点后直接点击"开始排盘测算"
     try { restoreLocation(saved); } catch (e) { /* 忽略 */ }
     $("submit").click();
+    // 同时恢复合婚与事业合盘的输入并重算，保证"从帮助页返回"时这三块结果都在
+    try { restoreMarriageCoopInputs(); } catch (e) { /* 忽略 */ }
   }
   // 兼容：若主程序有地点回填逻辑则调用，否则跳过（排盘会自动解析当前地点）
   if (typeof window.restoreLocation !== "function") {
