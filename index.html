@@ -51,7 +51,7 @@
 
   .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
 
-  header { text-align: center; margin: 28px 0 8px; }
+  header { text-align: center; margin: 28px 0 8px; position: relative; }
   header .logo { display: block; margin: 0 auto 20px; border-radius: 50%; box-shadow: 0 8px 30px rgba(0,0,0,0.45); }
   header h1 {
     font-size: 30px; font-weight: 800; letter-spacing: 2px;
@@ -60,6 +60,18 @@
     -webkit-text-fill-color: transparent;
   }
   header .subtitle { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+  header .help-link {
+    position: absolute; top: 8px; right: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--gold-2); text-decoration: none;
+    font-size: 13px; padding: 7px 14px;
+    border: 1px solid var(--panel-border); border-radius: 20px;
+    background: var(--panel); backdrop-filter: blur(6px);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  header .help-link:hover { border-color: var(--gold); box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+  @media (max-width: 560px) { header .help-link { position: static; margin-top: 14px; } }
 
   .card {
     background: var(--panel); border: 1px solid var(--panel-border);
@@ -257,6 +269,7 @@
     <img src="logo.svg" alt="八字命理排盘引擎 Logo" class="logo" width="120" height="120">
     <h1>八字命理排盘引擎</h1>
     <div class="subtitle">全球全历史高精度 · 四柱八字 · 十神格局详解（学习演示版）</div>
+    <a class="help-link" href="help.html" title="八字命理专业术语名词解释">📖 术语帮助</a>
   </header>
 
   <div class="card">
