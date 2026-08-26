@@ -969,7 +969,7 @@ $("submit").addEventListener("click", function () {
     renderResult(result, report, loc);
     // 保存本次排盘输入，供返回主页时恢复上次结果
     try {
-      localStorage.setItem("bazi_last_result", JSON.stringify({
+      sessionStorage.setItem("bazi_last_result", JSON.stringify({
         year, month, day, hour, minute, time_type, useDst,
         lng: loc.lng, tz: loc.tz, label: loc.label || ""
       }));
@@ -1333,8 +1333,21 @@ $("btn-hezuo").addEventListener("click", function () {
 /* ---------- 返回主页恢复上次排盘 ---------- */
 (function () {
   function restoreLastResult() {
+    // 区分刷新/首次加载 与 后退/前进：仅浏览器"后退/前进"(back_forward)才恢复上次结果；
+    // 主动刷新(reload)或全新打开(navigate)一律清空，保持表单与结果空白。
+    let navType = "navigate";
+    try {
+      if (window.performance && window.performance.getEntriesByType) {
+        const entries = window.performance.getEntriesByType("navigation");
+        if (entries && entries.length) navType = entries[0].type || "navigate";
+      }
+    } catch (e) { /* 忽略 */ }
+    if (navType !== "back_forward") {
+      try { sessionStorage.removeItem("bazi_last_result"); } catch (e) { /* 忽略 */ }
+      return; // 刷新或首次打开：不恢复，保持清空
+    }
     let saved = null;
-    try { saved = JSON.parse(localStorage.getItem("bazi_last_result") || "null"); } catch (e) { /* 忽略 */ }
+    try { saved = JSON.parse(sessionStorage.getItem("bazi_last_result") || "null"); } catch (e) { /* 忽略 */ }
     if (!saved || typeof saved !== "object") return;
     // 回填表单
     if (saved.year) $("year").value = saved.year;
