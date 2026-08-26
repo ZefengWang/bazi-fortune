@@ -183,11 +183,13 @@
   .hehun-score-meta { flex: 1; min-width: 190px; }
   .hehun-score-meta .lv { font-size: 20px; font-weight: 700; color: var(--gold-2); }
   .hehun-score-meta .vd { font-size: 14px; color: var(--text); margin-top: 6px; }
+  .hehun-badge { display: inline-block; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(90deg, var(--gold-2), var(--gold)); padding: 3px 12px; border-radius: 999px; margin-bottom: 6px; letter-spacing: 1px; }
   .hehun-dims { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
   .hehun-dim { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px; }
   .hehun-dim .dn { font-size: 13px; color: var(--gold); margin-bottom: 6px; }
   .hehun-dim .ds { font-size: 22px; font-weight: 700; color: var(--text); }
   .hehun-dim .dt { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .hehun-dim.ref .ds { font-size: 15px; font-weight: 500; color: var(--muted); }
   .hehun-info { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .hehun-person { background: rgba(0,0,0,0.22); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--text); }
   .hehun-person .pn { font-weight: 700; color: var(--gold-2); margin-bottom: 6px; }
@@ -393,7 +395,7 @@
 
   <div class="card" id="hehun">
     <h2>八字合婚（学习演示）</h2>
-    <div class="hehun-note">输入双方出生信息，按①生肖合冲 ②日主生克（含天干五合） ③婚姻宫合冲 ④五行互补 ⑤喜用神互补 ⑥格局阴阳（纯阳纯阴） 六维综合评分。民俗文化内容，仅供娱乐参考，不构成任何婚恋建议。</div>
+    <div class="hehun-note">输入双方出生信息，按①生肖正格 ②日主正格（含天干五合/相冲） ③婚姻宫正格 三维正格综合评分（吉加分、凶扣分），另附④五行互补 ⑤喜用神互补 ⑥格局阴阳 三项参考。民俗文化内容，仅供娱乐参考，不构成任何婚恋建议。</div>
     <div class="hehun-grid">
       <div class="hehun-side">
         <h3>甲方</h3>
@@ -1045,9 +1047,9 @@ function hehunError(msg) { const el = $("hehun-error"); el.textContent = msg; el
 function hehunClearError() { $("hehun-error").style.display = "none"; }
 
 function buildHehunHtml(h, nameA, nameB) {
-  const dimCard = (title, d, desc) => `<div class="hehun-dim">
+  const dimCard = (title, d, desc, isRef) => `<div class="hehun-dim${isRef ? " ref" : ""}">
     <div class="dn">${title}</div>
-    <div class="ds">${d.score} 分</div>
+    <div class="ds">${isRef ? "参考" : d.score + " 分"}</div>
     <div class="dt">${desc}</div>
   </div>`;
   const y = h.dims.yongshen;
@@ -1077,17 +1079,18 @@ function buildHehunHtml(h, nameA, nameB) {
     <div class="hehun-score-banner">
       <div class="hehun-score-num">${h.score}</div>
       <div class="hehun-score-meta">
+        ${h.badge ? `<div class="hehun-badge">${h.badge}</div>` : ""}
         <div class="lv">${h.level}</div>
         <div class="vd">${h.verdict}</div>
       </div>
     </div>
     <div class="hehun-dims">
-      ${dimCard("① 生肖合冲（10分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
-      ${dimCard("② 日主生克·五合（25分）", h.dims.rigan, h.dims.rigan.rel.text)}
-      ${dimCard("③ 婚姻宫合冲（20分）", h.dims.hunyin, h.dims.hunyin.rel.text)}
-      ${dimCard("④ 五行互补（15分）", h.dims.hubu, `互补 ${h.dims.hubu.complement} 项 · 同类重合 ${h.dims.hubu.overlap} 项`)}
-      ${dimCard("⑤ 喜用神互补（20分）", h.dims.yongshen, yongTxt)}
-      ${dimCard("⑥ 格局阴阳（10分）", h.dims.geju, gejuDesc)}
+      ${dimCard("① 生肖正格（20分）", h.dims.shengxiao, h.dims.shengxiao.rel.text)}
+      ${dimCard("② 日主正格（40分）", h.dims.rigan, h.dims.rigan.rel.text)}
+      ${dimCard("③ 婚姻宫正格（40分）", h.dims.hunyin, h.dims.hunyin.rel.text)}
+      ${dimCard("④ 五行互补（参考）", h.dims.hubu, `互补 ${h.dims.hubu.complement} 项 · 同类重合 ${h.dims.hubu.overlap} 项`, true)}
+      ${dimCard("⑤ 喜用神互补（参考）", h.dims.yongshen, yongTxt, true)}
+      ${dimCard("⑥ 格局阴阳（参考）", h.dims.geju, gejuDesc, true)}
     </div>
     <div class="hehun-info">
       ${person(nameA, h.a)}

@@ -1063,6 +1063,9 @@ const HE_KE    = { "木":"土", "火":"金", "土":"水", "金":"木", "水":"�
 /* 天干五合（甲己合土、乙庚合金、丙辛合水、丁壬合木、戊癸合火），双向映射 */
 const HE_TIANGAN_HE = { "甲":"己","己":"甲","乙":"庚","庚":"乙","丙":"辛","辛":"丙","丁":"壬","壬":"丁","戊":"癸","癸":"戊" };
 
+/* 天干相冲（甲庚、乙辛、丙壬、丁癸；戊己居中无冲），双向映射 */
+const HE_TIANGAN_CHONG = { "甲":"庚","庚":"甲","乙":"辛","辛":"乙","丙":"壬","壬":"丙","丁":"癸","癸":"丁" };
+
 /* 天干五合专名（各有专称） */
 const HE_TIANGAN_HE_NAME = {
   "甲己":"中正之合","己甲":"中正之合",
@@ -1070,6 +1073,15 @@ const HE_TIANGAN_HE_NAME = {
   "丙辛":"威制之合","辛丙":"威制之合",
   "丁壬":"淫慝之合","壬丁":"淫慝之合",
   "戊癸":"无情之合","癸戊":"无情之合"
+};
+
+/* 天干五合合化五行（甲己合土、乙庚合金、丙辛合水、丁壬合木、戊癸合火），双向映射 */
+const HE_TIANGAN_HE_HUA = {
+  "甲己":"土","己甲":"土",
+  "乙庚":"金","庚乙":"金",
+  "丙辛":"水","辛丙":"水",
+  "丁壬":"木","壬丁":"木",
+  "戊癸":"火","癸戊":"火"
 };
 
 /* 地支六合合化五行（子丑合土、寅亥合木、卯戌合火、辰酉合金、巳申合水、午未合土） */
@@ -1154,7 +1166,7 @@ function hehunZhiText(rel, a, b, scope) {
     }
     case "clash":  return `${scope}「${a}」与「${b}」为六冲，正面相冲，性格与节奏差异较大，容易起争执、闹矛盾，需要双方多磨合、多忍让。`;
     case "harm":   return `${scope}「${a}」与「${b}」为相害，暗中相妨，表面平静、内里易生隔阂，需坦诚沟通、及时化解误会。`;
-    case "punish": return `${scope}「${a}」与「${b}」为相刑，长期相处易有摩擦与内耗，需彼此包容、少较真。`;
+    case "punish": return `${scope}「${a}」与「${b}」为相刑（${hehunXingName(a, b)}），长期相处易有摩擦与内耗，需彼此包容、少较真。`;
     default:       return `${scope}「${a}」与「${b}」不冲不合，关系平和，虽无大吉大利，也没有明显冲克，顺其自然即可。`;
   }
 }
@@ -1204,7 +1216,22 @@ function detectPureYinYang(result) {
 /* 天干五合（有情之合）的白话解析 */
 function hehunWuheText(rel, tgA, tgB) {
   const name = HE_TIANGAN_HE_NAME[tgA + tgB] || "有情之合";
-  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干五合（${tgA}${tgB}合·${name}），属「有情之合」，彼此情投意合、吸引力强，是日主层面恩爱的象征，感情根基深厚。`;
+  const hua = HE_TIANGAN_HE_HUA[tgA + tgB] || "";
+  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干五合（${tgA}${tgB}合·${name}${hua ? `·合化${hua}` : ""}），属「有情之合」，彼此情投意合、吸引力强，是日主层面恩爱的象征，感情根基深厚。`;
+}
+
+/* 相刑细分：无礼之刑（子卯）、无恩之刑（寅巳申）、恃势之刑（丑戌未）、自刑（辰午酉亥） */
+function hehunXingName(a, b) {
+  if (a === b) return "自刑";
+  if (["子", "卯"].includes(a) && ["子", "卯"].includes(b)) return "无礼之刑";
+  if (["寅", "巳", "申"].includes(a) && ["寅", "巳", "申"].includes(b)) return "无恩之刑";
+  if (["丑", "戌", "未"].includes(a) && ["丑", "戌", "未"].includes(b)) return "恃势之刑";
+  return "相刑";
+}
+
+/* 天干相冲（甲庚/乙辛/丙壬/丁癸）的白话解析 */
+function hehunChongText(rel, tgA, tgB) {
+  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干相冲（${tgA}${tgB}冲），属「对冲」，性格与立场直接对撞、主导欲强，易起争执，需彼此退让、以柔化刚。`;
 }
 
 function computeHehun(resA, repA, resB, repB) {
@@ -1216,23 +1243,26 @@ function computeHehun(resA, repA, resB, repB) {
   const zhdz = resA.day_dz;            // 甲方婚姻宫（日支）
   const yhdz = resB.day_dz;            // 乙方婚姻宫
 
-  // —— ① 生肖（年支）满分 10（网上主流权重下生肖占比最低，故降权）——
+  // —— ① 生肖（年支）满分 20，吉正分、凶负分，关于 0 对称 ——
   const sxRel = branchRelationHe(zxz, yxz);
-  const sxScore = sxRel.type === "liuhe" ? 10 : sxRel.type === "sanhe" ? 8 : sxRel.type === "normal" ? 6 : sxRel.type === "clash" ? 0 : 3;
+  const sxScore = sxRel.type === "liuhe" ? 20 : sxRel.type === "sanhe" ? 10 : sxRel.type === "normal" ? 0 : sxRel.type === "harm" ? -10 : sxRel.type === "punish" ? -15 : -20;
 
-  // —— ② 日主（日干）：先判天干五合（有情之合），再判五行生克，满分 25（合婚最重日主）——
+  // —— ② 日主（日干）满分 40：先判天干五合 / 天干相冲，再判五行生克，镜像对称 ——
   let rgRel, rgScore;
   if (HE_TIANGAN_HE[tgA] === tgB) {
     rgRel = { type: "he", label: "天干相合", good: true, strong: true, text: `${tgA}${tgB}为天干五合，有情之合` };
-    rgScore = 25;
+    rgScore = 40;
+  } else if (HE_TIANGAN_CHONG[tgA] === tgB) {
+    rgRel = { type: "chong", label: "天干相冲", good: false, strong: true, text: `${tgA}${tgB}为天干相冲` };
+    rgScore = -40;
   } else {
     rgRel = wuxingRelationHe(zdx, ydx);
-    rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 15 : 6;
+    rgScore = rgRel.type === "sheng" ? 20 : rgRel.type === "same" ? 0 : -20;
   }
 
-  // —— ③ 日支（婚姻宫）满分 20 ——
+  // —— ③ 日支（婚姻宫）满分 40，吉正分、凶负分，关于 0 对称 ——
   const hgRel = branchRelationHe(zhdz, yhdz);
-  const hgScore = hgRel.type === "liuhe" ? 20 : hgRel.type === "sanhe" ? 16 : hgRel.type === "normal" ? 12 : hgRel.type === "clash" ? 3 : 7;
+  const hgScore = hgRel.type === "liuhe" ? 40 : hgRel.type === "sanhe" ? 20 : hgRel.type === "normal" ? 0 : hgRel.type === "harm" ? -20 : hgRel.type === "punish" ? -30 : -40;
 
   // —— ④ 五行能量互补 ——
   const pa = repA.elements_power, pb = repB.elements_power;
@@ -1285,13 +1315,21 @@ function computeHehun(resA, repA, resB, repB) {
     gejuText = "双方均为常规格局（非纯阳、非纯阴），阴阳分布平稳，无特殊偏枯之象。";
   }
 
-  const score = sxScore + rgScore + hgScore + buScore + yongScore + gejuScore;
+  // 总分 = 三维正格之和（区间 [-100, +100]，关于 0 对称）；④⑤⑥为参考附录，不计入总分
+  const score = sxScore + rgScore + hgScore;
   let level, verdict;
-  if (score >= 85) { level = "上等婚"; verdict = "天作之合，双方生肖、日主与婚姻宫高度契合，五行互补，情感根基深厚。"; }
-  else if (score >= 70) { level = "中上等婚"; verdict = "良配，契合度较高，只要经营得当，感情生活可和谐美满。"; }
-  else if (score >= 55) { level = "中等婚"; verdict = "缘分一般，相处中需多包容磨合，把差异化为互补。"; }
-  else if (score >= 40) { level = "中下等婚"; verdict = "契合度偏低，冲克较多，需双方付出更多耐心与理解去经营。"; }
-  else { level = "下等婚"; verdict = "冲克较重，感情易生波折，若同居共处需格外用心化解分歧。"; }
+  if (score >= 85) { level = "上等婚"; verdict = "天作之合，双方生肖、日主与婚姻宫高度契合，情感根基深厚。"; }
+  else if (score >= 50) { level = "中上等婚"; verdict = "良配，契合度较高，只要经营得当，感情生活可和谐美满。"; }
+  else if (score >= 15) { level = "中等偏上婚"; verdict = "缘分不错，相合多于相冲，稍加磨合即可长久。"; }
+  else if (score > -15) { level = "中等婚"; verdict = "吉凶参半、缘分一般，有好有坏，重在经营与磨合。"; }
+  else if (score > -50) { level = "中等偏下婚"; verdict = "契合度偏低，冲克渐显，需双方多付出耐心与理解去经营。"; }
+  else if (score > -85) { level = "下等婚"; verdict = "冲克较重，感情易生波折，若同居共处需格外用心化解分歧。"; }
+  else { level = "极冲"; verdict = "冲克极重，正面冲突多，需谨慎相待、深入磨合，方可维系。"; }
+
+  // 天干五合 + 日支六合 同现 = 天地鸳鸯合（干合支合，夫妻宫鸳鸯合）
+  const tianHe = HE_TIANGAN_HE[tgA] === tgB;
+  const diHe = hgRel.type === "liuhe";
+  const badge = (tianHe && diHe) ? "天地鸳鸯合" : null;
 
   // 四柱完全相同（同一天同一时辰）：同性相求，专门文案，避免被通用档位"冲克"措辞误导
   const identical = resA.year_tg  === resB.year_tg  && resA.year_dz  === resB.year_dz &&
@@ -1305,9 +1343,9 @@ function computeHehun(resA, repA, resB, repB) {
 
   // —— 详细白话解析 ——
   const analysis = {
-    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），六维综合 ${score} 分，判为「${level}」。${verdict}`,
+    summary: `甲方日主「${resA.ri_zhu}」属${zdx}、生肖${ZODIAC[zxz]}（${zxz}），乙方日主「${resB.ri_zhu}」属${ydx}、生肖${ZODIAC[yxz]}（${yxz}），三维正格综合 ${score} 分${badge ? `，命中「${badge}」` : ""}，判为「${level}」。${verdict}`,
     shengxiao: hehunZhiText(sxRel, zxz, yxz, "年支生肖"),
-    rigan:    rgRel.type === "he" ? hehunWuheText(rgRel, tgA, tgB) : hehunWuxingText(rgRel, zdx, ydx),
+    rigan:    rgRel.type === "he" ? hehunWuheText(rgRel, tgA, tgB) : rgRel.type === "chong" ? hehunChongText(rgRel, tgA, tgB) : hehunWuxingText(rgRel, zdx, ydx),
     hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
     hubu:     hehunHubuText({ complement, overlap, identical }, topA, topB),
     yongshen: hehunYongText({ aFoxiangB, bFoxiangA }, topA, topB),
@@ -1315,7 +1353,7 @@ function computeHehun(resA, repA, resB, repB) {
   };
 
   return {
-    score, level, verdict, analysis,
+    score, level, verdict, badge, analysis,
     a: { ri_zhu: resA.ri_zhu, me_x: zdx, year_zhi: zxz, day_zhi: zhdz, power: pa, top: topA, yong: yongA, pure: pureA },
     b: { ri_zhu: resB.ri_zhu, me_x: ydx, year_zhi: yxz, day_zhi: yhdz, power: pb, top: topB, yong: yongB, pure: pureB },
     dims: {
