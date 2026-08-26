@@ -964,6 +964,13 @@ $("submit").addEventListener("click", function () {
     const result = ENGINE.execute_global_fortune_engine(year, month, day, hour, minute, loc.lng, loc.tz, time_type, useDst && time_type === 1);
     const report = ENGINE.generate_report(result);
     renderResult(result, report, loc);
+    // 保存本次排盘输入，供返回主页时恢复上次结果
+    try {
+      localStorage.setItem("bazi_last_result", JSON.stringify({
+        year, month, day, hour, minute, time_type, useDst,
+        lng: loc.lng, tz: loc.tz, label: loc.label || ""
+      }));
+    } catch (e) { /* 存储失败忽略 */ }
     $("result").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
     showError("❌ 排盘失败：" + (e && e.message ? e.message : e));
@@ -1319,6 +1326,45 @@ $("btn-hezuo").addEventListener("click", function () {
     hezuoError("❌ 合盘测算失败：" + (e && e.message ? e.message : e));
   }
 });
+
+/* ---------- 返回主页恢复上次排盘 ---------- */
+(function () {
+  function restoreLastResult() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem("bazi_last_result") || "null"); } catch (e) { /* 忽略 */ }
+    if (!saved || typeof saved !== "object") return;
+    // 回填表单
+    if (saved.year) $("year").value = saved.year;
+    if (saved.month) $("month").value = saved.month;
+    if (saved.day) $("day").value = saved.day;
+    if (typeof saved.hour === "number") $("hour").value = saved.hour;
+    if (typeof saved.minute === "number") $("minute").value = saved.minute;
+    if (typeof saved.time_type === "number") {
+      document.querySelectorAll('input[name="time_type"]').forEach(el => {
+        el.checked = (parseInt(el.value, 10) === saved.time_type);
+      });
+    }
+    if (typeof saved.useDst === "boolean") $("dst").value = saved.useDst ? "1" : "0";
+    // 复用现有排盘管线：回填地点后直接点击"开始排盘测算"
+    try { restoreLocation(saved); } catch (e) { /* 忽略 */ }
+    $("submit").click();
+  }
+  // 兼容：若主程序有地点回填逻辑则调用，否则跳过（排盘会自动解析当前地点）
+  if (typeof window.restoreLocation !== "function") {
+    window.restoreLocation = function (saved) {
+      if (saved.label && typeof $ === "function" && document.getElementById("location-info")) {
+        const info = document.getElementById("location-info");
+        info.innerHTML = `<b>${saved.label}</b>`;
+      }
+    };
+  }
+  // 等所有脚本加载完成后执行
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function(){ setTimeout(restoreLastResult, 0); });
+  } else {
+    setTimeout(restoreLastResult, 0);
+  }
+})();
 </script>
 </body>
 </html>
