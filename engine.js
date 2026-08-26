@@ -798,17 +798,15 @@ function computeMarriageAndCareer(result, report, gender) {
   // —— 五行行业 + 喜用/中和 补充（对齐主流"五行定行业、喜用定最顺赛道"的三层结构）——
   const elDir = topEl && ELEMENT_INDUSTRY[topEl] ? ELEMENT_INDUSTRY[topEl] : null;
   const shiInds = SHISHEN_INDUSTRY[main] ? SHISHEN_INDUSTRY[main].inds : [];
-  const ratioEl = (report && report.strength) ? report.strength.ratio : null;
-  const isNeutral = ratioEl != null && ratioEl > 0.45 && ratioEl < 0.55;
   const elNote = elDir
     ? `命局${topEl}气偏盛、主“${elDir.dir}”。就行业方向看，较契合的现代行业有：${elDir.inds.join("、")}。`
     : "";
   const shiNote = shiInds.length
     ? `命局十神以“${main}”最旺，职业角色倾向：${shiInds.join("、")}。`
     : "";
-  const yongNote = isNeutral
-    ? "命局中和、喜用方向不分明，且不判唯一定论，行业取舍以上面的五行/十神倾向作参考即可。"
-    : ((report && report.yong_shen) ? `喜用方向为「${report.yong_shen}」，往喜用对应的行业走更容易发挥自身优势。` : "");
+  const yongNote = (report && report.yong_shen)
+    ? `喜用方向为「${report.yong_shen}」，往喜用对应的行业走更容易发挥自身优势。`
+    : "";
   if (elNote) careerAnalysis = careerAnalysis + " " + elNote;
   if (yongNote) careerAdvice = careerAdvice + " " + yongNote;
 
@@ -1185,10 +1183,6 @@ function hehunHubuText(hubu, topA, topB) {
 /* 喜用神互补度的白话解析 */
 function hehunYongText(dimY, topA, topB) {
   const a = dimY.aFoxiangB, b = dimY.bFoxiangA;
-  if (dimY.neutral) {
-    const base = (a && b) ? "本来喜用互旺" : (a || b) ? "本来存在单向补益" : "本无补益";
-    return `一方或双方命局为「中和」，喜用方向不明确，此维度按保守口径降档计分（${base}），避免虚高。`;
-  }
   if (a && b) return `甲方最旺的「${topA[0]}」恰是乙方命局所需，乙方最旺的「${topB[0]}」也恰是甲方所需，双方喜用神互相成就，是合婚中难得的「互相旺对方」组合。`;
   if (a) return `甲方最旺的「${topA[0]}」正是乙方命局所缺所需，甲能补乙，能给对方带来实质助力。`;
   if (b) return `乙方最旺的「${topB[0]}」正是甲方命局所缺所需，乙能补甲，能给对方带来实质助力。`;
@@ -1268,9 +1262,6 @@ function computeHehun(resA, repA, resB, repB) {
   else if (aErxiangB || bErxiangA) yongScore = 10;
   else yongScore = 6;
 
-  // 中和命局现已能精判出具体用神五行（格局病通关 / 调候），喜用方向不再"不明确"，取消降档
-  const neutral = false;
-
   // —— ⑥ 格局阴阳（四柱纯阳/纯阴）满分 10 ——
   const pureA = detectPureYinYang(resA), pureB = detectPureYinYang(resB);
   const aPure = pureA !== "非纯", bPure = pureB !== "非纯";
@@ -1319,7 +1310,7 @@ function computeHehun(resA, repA, resB, repB) {
     rigan:    rgRel.type === "he" ? hehunWuheText(rgRel, tgA, tgB) : hehunWuxingText(rgRel, zdx, ydx),
     hunyin:   hehunZhiText(hgRel, zhdz, yhdz, "婚姻宫（日支）"),
     hubu:     hehunHubuText({ complement, overlap, identical }, topA, topB),
-    yongshen: hehunYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB),
+    yongshen: hehunYongText({ aFoxiangB, bFoxiangA }, topA, topB),
     geju:     gejuText
   };
 
@@ -1332,7 +1323,7 @@ function computeHehun(resA, repA, resB, repB) {
       rigan:    { score: rgScore, rel: rgRel },
       hunyin:   { score: hgScore, rel: hgRel },
       hubu:     { score: buScore, complement, overlap },
-      yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral },
+      yongshen: { score: yongScore, aFoxiangB, bFoxiangA },
       geju:     { score: gejuScore, pureA, pureB }
     }
   };
@@ -1406,10 +1397,6 @@ function hezuoHubuText(hubu, topA, topB) {
 /* 喜用神互补度（合作语境）白话解析 */
 function hezuoYongText(dimY, topA, topB) {
   const a = dimY.aFoxiangB, b = dimY.bFoxiangA;
-  if (dimY.neutral) {
-    const base = (a && b) ? "本来喜用互旺" : (a || b) ? "本来存在单向补益" : "本无补益";
-    return `一方或双方命局为「中和」，喜用方向不明确，此维度按保守口径降档计分（${base}），避免虚高。`;
-  }
   if (a && b) return `甲方最旺的「${topA[0]}」恰是乙方命局所需，乙方最旺的「${topB[0]}」也恰是甲方所需，双方喜用神互相成就，是合作中难得的「互相旺对方」组合。`;
   if (a) return `甲方最旺的「${topA[0]}」正是乙方命局所缺所需，甲能补乙，能为合作带来实质助力。`;
   if (b) return `乙方最旺的「${topB[0]}」正是甲方命局所缺所需，乙能补甲，能为合作带来实质助力。`;
@@ -1480,8 +1467,6 @@ function computeHezuo(resA, repA, resB, repB) {
   else if (aFoxiangB || bFoxiangA || (aErxiangB && bErxiangA)) yongScore = 14;
   else if (aErxiangB || bErxiangA) yongScore = 10;
   else yongScore = 6;
-  // 中和命局现已能精判出具体用神五行，取消降档
-  const neutral = false;
 
   // —— ⑥ 格局阴阳 满分 10 ——
   const pureA = detectPureYinYang(resA), pureB = detectPureYinYang(resB);
@@ -1531,7 +1516,7 @@ function computeHezuo(resA, repA, resB, repB) {
     rigan:    rgRel.type === "he" ? hezuoWuheText(rgRel, tgA, tgB) : hezuoWuxingText(rgRel, zdx, ydx),
     bijie:    hezuoBijieText(bjA, bjB, weakA, weakB, strongA, strongB, zdx, ydx),
     hubu:     hezuoHubuText({ complement, overlap, identical }, topA, topB),
-    yongshen: hezuoYongText({ aFoxiangB, bFoxiangA, neutral }, topA, topB),
+    yongshen: hezuoYongText({ aFoxiangB, bFoxiangA }, topA, topB),
     geju:     gejuText
   };
 
@@ -1544,7 +1529,7 @@ function computeHezuo(resA, repA, resB, repB) {
       rigan:    { score: rgScore, rel: rgRel },
       bijie:    { score: bjScore, bjA, bjB, weakA, weakB, strongA, strongB },
       hubu:     { score: buScore, complement, overlap },
-      yongshen: { score: yongScore, aFoxiangB, bFoxiangA, neutral },
+      yongshen: { score: yongScore, aFoxiangB, bFoxiangA },
       geju:     { score: gejuScore, pureA, pureB }
     }
   };

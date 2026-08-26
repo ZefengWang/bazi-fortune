@@ -703,7 +703,6 @@ function plainYongShen(yong) {
   if (yong.indexOf("财") >= 0) return "适合求财、经营、务实赚钱的路子";
   if (yong.indexOf("印") >= 0) return "适合学习、进修、靠知识和贵人相助";
   if (yong.indexOf("比劫") >= 0) return "适合靠朋友、团队、自己打拼";
-  if (yong.indexOf("五行流通") >= 0) return "五行流通、顺势而为，即命局各五行力量较为均衡、彼此生助，宜顺应自身节奏稳步发展，不宜强行改变方向";
   return "顺势而为";
 }
 
@@ -1022,8 +1021,7 @@ function buildHehunHtml(h, nameA, nameB) {
   </div>`;
   const y = h.dims.yongshen;
   let yongTxt;
-  if (y.neutral) yongTxt = "中和命局·该维度保守降档";
-  else if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
+  if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
   else if (y.aFoxiangB) yongTxt = "甲方能补乙方所需";
   else if (y.bFoxiangA) yongTxt = "乙方能补甲方所需";
   else yongTxt = "喜用神互补较弱";
@@ -1176,8 +1174,7 @@ function buildHezuoHtml(h, nameA, nameB) {
   </div>`;
   const y = h.dims.yongshen;
   let yongTxt;
-  if (y.neutral) yongTxt = "中和命局·该维度保守降档";
-  else if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
+  if (y.aFoxiangB && y.bFoxiangA) yongTxt = "双方喜用神互相补充";
   else if (y.aFoxiangB) yongTxt = "甲方能补乙方所需";
   else if (y.bFoxiangA) yongTxt = "乙方能补甲方所需";
   else yongTxt = "喜用神互补较弱";
