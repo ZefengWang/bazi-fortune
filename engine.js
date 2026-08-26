@@ -1065,6 +1065,39 @@ const HE_KE    = { "木":"土", "火":"金", "土":"水", "金":"木", "水":"�
 /* 天干五合（甲己合土、乙庚合金、丙辛合水、丁壬合木、戊癸合火），双向映射 */
 const HE_TIANGAN_HE = { "甲":"己","己":"甲","乙":"庚","庚":"乙","丙":"辛","辛":"丙","丁":"壬","壬":"丁","戊":"癸","癸":"戊" };
 
+/* 天干五合专名（各有专称） */
+const HE_TIANGAN_HE_NAME = {
+  "甲己":"中正之合","己甲":"中正之合",
+  "乙庚":"仁义之合","庚乙":"仁义之合",
+  "丙辛":"威制之合","辛丙":"威制之合",
+  "丁壬":"淫慝之合","壬丁":"淫慝之合",
+  "戊癸":"无情之合","癸戊":"无情之合"
+};
+
+/* 地支六合合化五行（子丑合土、寅亥合木、卯戌合火、辰酉合金、巳申合水、午未合土） */
+const HE_LIUHE_HUA = {
+  "子丑":"土","丑子":"土",
+  "寅亥":"木","亥寅":"木",
+  "卯戌":"火","戌卯":"火",
+  "辰酉":"金","酉辰":"金",
+  "巳申":"水","申巳":"水",
+  "午未":"土","未午":"土"
+};
+
+/* 地支三合局（申子辰水、寅午戌火、巳酉丑金、亥卯未木）*/
+const HE_SANHE_JU = [["申","子","辰","水"],["寅","午","戌","火"],["巳","酉","丑","金"],["亥","卯","未","木"]];
+
+/* 返回两支同属的三合局及合化五行；不属于同一三合局则返回 null */
+function sanheJu(a, b) {
+  for (const grp of HE_SANHE_JU) {
+    const hua = grp[3];
+    if (grp.includes(a) && grp.includes(b) && a !== b) {
+      return { ju: `${grp[0]}${grp[1]}${grp[2]}`, hua };
+    }
+  }
+  return null;
+}
+
 /* 返回两支关系（a 相对 b），供生肖与婚姻宫共同使用 */
 function branchRelationHe(a, b) {
   if (HE_COMBINE[a] === b) return { type: "liuhe",  label: "六合", good: true,  strong: true,  text: `${a}${b}为六合` };
@@ -1113,8 +1146,14 @@ function topWuxings(power) {
 /* 生肖 / 婚姻宫（地支）关系的白话解析 */
 function hehunZhiText(rel, a, b, scope) {
   switch (rel.type) {
-    case "liuhe":  return `${scope}「${a}」与「${b}」为六合，地支相合中较吉利的一类，彼此性情相投、互相吸引，相处轻松愉悦，感情根基稳定。`;
-    case "sanhe":  return `${scope}「${a}」与「${b}」为三合，彼此呼应、志趣相近，配合默契，能互相成就、共同进步。`;
+    case "liuhe": {
+      const hua = HE_LIUHE_HUA[a + b] || "";
+      return `${scope}「${a}」与「${b}」为六合${hua ? `（${a}${b}合·合化${hua}）` : ""}，地支相合中较吉利的一类，彼此性情相投、互相吸引，相处轻松愉悦，感情根基稳定。`;
+    }
+    case "sanhe": {
+      const ju = sanheJu(a, b);
+      return `${scope}「${a}」与「${b}」为三合${ju ? `（${ju.ju}三合局·合化${ju.hua}）` : ""}，彼此呼应、志趣相近，配合默契，能互相成就、共同进步。`;
+    }
     case "clash":  return `${scope}「${a}」与「${b}」为六冲，正面相冲，性格与节奏差异较大，容易起争执、闹矛盾，需要双方多磨合、多忍让。`;
     case "harm":   return `${scope}「${a}」与「${b}」为相害，暗中相妨，表面平静、内里易生隔阂，需坦诚沟通、及时化解误会。`;
     case "punish": return `${scope}「${a}」与「${b}」为相刑，长期相处易有摩擦与内耗，需彼此包容、少较真。`;
@@ -1170,7 +1209,8 @@ function detectPureYinYang(result) {
 
 /* 天干五合（有情之合）的白话解析 */
 function hehunWuheText(rel, tgA, tgB) {
-  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干五合，属「有情之合」，彼此情投意合、吸引力强，是日主层面恩爱的象征，感情根基深厚。`;
+  const name = HE_TIANGAN_HE_NAME[tgA + tgB] || "有情之合";
+  return `甲方日干「${tgA}」与乙方日干「${tgB}」为天干五合（${tgA}${tgB}合·${name}），属「有情之合」，彼此情投意合、吸引力强，是日主层面恩爱的象征，感情根基深厚。`;
 }
 
 function computeHehun(resA, repA, resB, repB) {
