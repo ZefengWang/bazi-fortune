@@ -835,6 +835,75 @@ function parentElementOf(me_x) {
   return ELEMENT_ORDER[pymod(ELEMENT_ORDER.indexOf(me_x) - 1, 5)];
 }
 
+/* =====================================================================
+ * 8.1 喜用神精判：格局病识别 + 通关用神 + 调候 + 方位
+ * ---------------------------------------------------------------------
+ * 决策优先级：格局病通关 > 调候（中和时）> 身强弱扶抑
+ * ===================================================================== */
+const SEASON_OF_MONTH = { "寅":"春","卯":"春","辰":"春","巳":"夏","午":"夏","未":"夏","申":"秋","酉":"秋","戌":"秋","亥":"冬","子":"冬","丑":"冬" };
+/* 最简调候：春冬喜火暖局、夏秋喜水润燥（辅助参考，优先级低于格局病通关） */
+const TIAOHOU_ELEMENT = { "春":"火", "夏":"水", "秋":"水", "冬":"火" };
+/* 五行 → 方位（民俗说法，仅供娱乐参考） */
+const ELEMENT_DIRECTION = { "木":"东方", "火":"南方", "土":"中央 / 本地", "金":"西方", "水":"北方" };
+
+/* 返回某五行相对日主 me_x 的十神大类关键词（官杀/食伤/财/印/比劫） */
+function elementShishenKeyword(me_x, element) {
+  if (element === me_x) return "比劫";
+  if (element === parentElementOf(me_x)) return "印";
+  if (element === HE_SHENG[me_x]) return "食伤";
+  if (element === HE_KE[me_x]) return "财";
+  if (HE_KE[element] === me_x) return "官杀";
+  return "";
+}
+
+/* 精判用神五行：返回 { element, keyword, reason, direction, disease } */
+function computeYongshen(me_x, power, month_dz, ratio) {
+  const shengWo = parentElementOf(me_x);                       // 生我者（印）
+  const woSheng = HE_SHENG[me_x];                              // 我生者（食伤）
+  const woKe    = HE_KE[me_x];                                 // 我克者（财）
+  const keWo    = ELEMENT_ORDER.find(w => HE_KE[w] === me_x);  // 克我者（官杀）
+
+  const P = w => (power && power[w]) || 0;
+  const total = ELEMENT_ORDER.reduce((s, w) => s + P(w), 0) || 1;
+  const frac = w => P(w) / total;
+  const strong = w => frac(w) >= 0.16;                         // 相对偏旺阈值
+  const tongGuan = A => HE_SHENG[A];                           // A 克 B 时，A生C、C生B 的 C = A 所生者
+
+  // 格局病识别（按优先级取第一个命中项）
+  let disease = null;
+  if (strong(woKe) && strong(shengWo) && HE_KE[woKe] === shengWo) {
+    disease = { name: "财印相战", yong: tongGuan(woKe), desc: `财星「${woKe}」旺而克制印星「${shengWo}」，取「${tongGuan(woKe)}」通关，化财生印` };
+  } else if (strong(woSheng) && strong(keWo) && HE_KE[woSheng] === keWo) {
+    disease = { name: "伤官见官", yong: tongGuan(woSheng), desc: `食伤「${woSheng}」旺而克制官杀「${keWo}」，取「${tongGuan(woSheng)}」通关` };
+  } else if (strong(me_x) && strong(woKe) && HE_KE[me_x] === woKe) {
+    disease = { name: "比劫夺财", yong: tongGuan(me_x), desc: `比劫「${me_x}」旺而争夺财星「${woKe}」，取「${tongGuan(me_x)}」通关` };
+  } else if (strong(shengWo) && strong(woSheng) && HE_KE[shengWo] === woSheng) {
+    disease = { name: "枭神夺食", yong: tongGuan(shengWo), desc: `印星「${shengWo}」旺而克制食伤「${woSheng}」，取「${tongGuan(shengWo)}」通关` };
+  }
+
+  const season = SEASON_OF_MONTH[month_dz] || "春";
+  const tiao = TIAOHOU_ELEMENT[season] || "火";
+
+  let element, reason;
+  if (disease) {
+    element = disease.yong;
+    reason = disease.desc + (element === tiao ? `，兼${season}季调候` : "");
+  } else if (ratio > 0.45 && ratio < 0.55) {
+    element = tiao;
+    reason = `命局中和、喜用不偏枯，取${season}季调候「${tiao}」为方向`;
+  } else if (ratio >= 0.55) {
+    const cands = [keWo, woSheng, woKe].map(w => ({ w, p: frac(w) })).sort((a, b) => a.p - b.p);
+    element = cands[0].w;
+    reason = `身强宜克泄耗，取「${element}」打通停滞、泄其有余`;
+  } else {
+    element = frac(shengWo) <= frac(me_x) ? shengWo : me_x;
+    reason = `身弱宜生扶，取「${element}」帮身`;
+  }
+
+  const keyword = elementShishenKeyword(me_x, element);
+  return { element, keyword, reason, direction: ELEMENT_DIRECTION[element] || "", disease: disease ? disease.name : null };
+}
+
 /* 加权身强弱评分 */
 function evaluateStrength(ri_zhu, stems, branches, month_dz) {
   const me_x = WU_XING[ri_zhu];
@@ -871,13 +940,27 @@ function evaluateStrength(ri_zhu, stems, branches, month_dz) {
   else if (ratio <= 0.45) label = "身偏弱";
   else label = "中和";
 
-  // 喜用神方向
+  // 喜用神方向：全档位启用精判（格局病通关 > 调候 > 身强弱扶抑），落到具体五行与方位
+  // 说明：
+  //   1) 命中格局病时"有病先治病"，取通关神为用，其十神可能不属于身强弱大类，统一用"喜用神"口径，避免下游误判；
+  //   2) 非格局病的身强/身弱，保留"克泄耗/生扶"及全部对应十神关键词，供下游 isYongShen / 大运吉凶精确匹配，
+  //      同时附加"主用五行"，让三档命局都能拿到具体方向（此前仅中和命局有，属残留漏洞）。
+  const ys = computeYongshen(me_x, power, month_dz, ratio);
+  const yong_element = ys.element;
+  const yong_direction = ys.direction;
+  const yong_reason = ys.reason;
   let yong;
-  if (ratio >= 0.55) yong = "克泄耗（官杀 / 食伤 / 财）";
-  else if (ratio <= 0.45) yong = "生扶（正偏印 / 比劫）";
-  else yong = "五行流通（顺势而为）";
+  if (ys.disease) {
+    yong = `喜用神：${ys.element}（${ys.keyword}）`;
+  } else if (ratio >= 0.55) {
+    yong = `克泄耗（官杀 / 食伤 / 财）｜主用「${ys.element} · ${ys.keyword}」`;
+  } else if (ratio <= 0.45) {
+    yong = `生扶（正偏印 / 比劫）｜主用「${ys.element} · ${ys.keyword}」`;
+  } else {
+    yong = `喜用神：${ys.element}（${ys.keyword}）`;
+  }
 
-  return { power, ally, foe, ratio, label, yong };
+  return { power, ally, foe, ratio, label, yong, yong_element, yong_direction, yong_reason };
 }
 
 function generate_report(result) {
@@ -928,6 +1011,7 @@ function generate_report(result) {
     me_x, month_relation, elements_count, elements_power: strength.power,
     parent_element, strength, hidden_stems, shishen,
     power_status: strength.label, yong_shen: strength.yong,
+    yong_element: strength.yong_element, yong_direction: strength.yong_direction, yong_reason: strength.yong_reason,
     detail, pillars_detail
   };
 }
@@ -1002,7 +1086,7 @@ function wuxingRelationHe(xa, xb) {
 }
 
 /* 返回某个命局的喜用（所需）五行集合 */
-function yongWuxings(me_x, ratio) {
+function yongWuxings(me_x, ratio, yongElement) {
   if (ratio >= 0.55) {
     // 身强：喜克泄耗 = 克我（官杀）、我生（食伤）、我克（财）
     const keWo = ELEMENT_ORDER.find(w => HE_KE[w] === me_x);   // 克我者
@@ -1015,7 +1099,8 @@ function yongWuxings(me_x, ratio) {
     const shengWo = parentElementOf(me_x);
     return [shengWo, me_x];
   }
-  return ELEMENT_ORDER.slice(); // 中和：喜流通
+  // 中和：优先采用精判出的具体用神五行；兜底全五行
+  return yongElement ? [yongElement] : ELEMENT_ORDER.slice();
 }
 
 /* 返回命局最旺的两个五行（按加权能量降序） */
@@ -1130,8 +1215,8 @@ function computeHehun(resA, repA, resB, repB) {
   buScore = Math.max(8, Math.min(15, Math.round(buScore)));  // 同类重合仅说明缺互补，下限保 8，不再压到低分
 
   // —— ⑤ 喜用神互补 ——
-  const yongA = yongWuxings(zdx, repA.strength.ratio);
-  const yongB = yongWuxings(ydx, repB.strength.ratio);
+  const yongA = yongWuxings(zdx, repA.strength.ratio, repA.yong_element);
+  const yongB = yongWuxings(ydx, repB.strength.ratio, repB.yong_element);
   const topB = topWuxings(pb), topA = topWuxings(pa);
   const aFoxiangB = yongB.some(w => topA[0] === w);     // 甲最旺 = 乙所需
   const bFoxiangA = yongA.some(w => topB[0] === w);     // 乙最旺 = 甲所需
@@ -1143,15 +1228,8 @@ function computeHehun(resA, repA, resB, repB) {
   else if (aErxiangB || bErxiangA) yongScore = 10;
   else yongScore = 6;
 
-  // 中和命局（0.45 < ratio < 0.55）喜用方向不明确，该维度降一档，避免评分虚高
-  const neutralA = repA.strength.ratio > 0.45 && repA.strength.ratio < 0.55;
-  const neutralB = repB.strength.ratio > 0.45 && repB.strength.ratio < 0.55;
-  const neutral = neutralA || neutralB;
-  if (neutral) {
-    if (yongScore === 20) yongScore = 14;
-    else if (yongScore === 14) yongScore = 10;
-    else if (yongScore === 10) yongScore = 8;   // 8 为下限，不再因中和压到过低
-  }
+  // 中和命局现已能精判出具体用神五行（格局病通关 / 调候），喜用方向不再"不明确"，取消降档
+  const neutral = false;
 
   // —— ⑥ 格局阴阳（四柱纯阳/纯阴）满分 10 ——
   const pureA = detectPureYinYang(resA), pureB = detectPureYinYang(resB);
@@ -1350,8 +1428,8 @@ function computeHezuo(resA, repA, resB, repB) {
   buScore = Math.max(8, Math.min(15, Math.round(buScore)));
 
   // —— ⑤ 喜用神互补 满分 20 ——
-  const yongA = yongWuxings(zdx, repA.strength.ratio);
-  const yongB = yongWuxings(ydx, repB.strength.ratio);
+  const yongA = yongWuxings(zdx, repA.strength.ratio, repA.yong_element);
+  const yongB = yongWuxings(ydx, repB.strength.ratio, repB.yong_element);
   const topB = topWuxings(pb), topA = topWuxings(pa);
   const aFoxiangB = yongB.some(w => topA[0] === w);
   const bFoxiangA = yongA.some(w => topB[0] === w);
@@ -1362,14 +1440,8 @@ function computeHezuo(resA, repA, resB, repB) {
   else if (aFoxiangB || bFoxiangA || (aErxiangB && bErxiangA)) yongScore = 14;
   else if (aErxiangB || bErxiangA) yongScore = 10;
   else yongScore = 6;
-  const neutralA = repA.strength.ratio > 0.45 && repA.strength.ratio < 0.55;
-  const neutralB = repB.strength.ratio > 0.45 && repB.strength.ratio < 0.55;
-  const neutral = neutralA || neutralB;
-  if (neutral) {
-    if (yongScore === 20) yongScore = 14;
-    else if (yongScore === 14) yongScore = 10;
-    else if (yongScore === 10) yongScore = 8;
-  }
+  // 中和命局现已能精判出具体用神五行，取消降档
+  const neutral = false;
 
   // —— ⑥ 格局阴阳 满分 10 ——
   const pureA = detectPureYinYang(resA), pureB = detectPureYinYang(resB);

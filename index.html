@@ -736,6 +736,9 @@ function buildPlainSummary(result, report) {
 
   // 喜用神白话
   const yongPlain = plainYongShen(report.yong_shen);
+  const yongDir = report.yong_direction || "";
+  const yongDirTxt = (yongDir && yongDir !== "中央 / 本地") ? `宜往<b>${yongDir}</b>方向发展。` : "";
+  const yongReasonTxt = report.yong_reason ? ` ${report.yong_reason}。` : "";
 
   $("plain-summary").innerHTML =
     `<h3>白话解读 · 一图看懂你的命</h3>
@@ -744,7 +747,7 @@ function buildPlainSummary(result, report) {
        <div class="plain-item"><span class="plain-tag">适合做什么</span><div class="plain-body">${careerPlain}</div></div>
        <div class="plain-item"><span class="plain-tag">感情婚姻</span><div class="plain-body">${marriagePlain}</div></div>
        <div class="plain-item"><span class="plain-tag">一生运势</span><div class="plain-body">${luckTxt}</div></div>
-       <div class="plain-item"><span class="plain-tag">喜用方向</span><div class="plain-body">${yongPlain}。多往这个方向努力，更容易发挥自身优势。</div></div>
+       <div class="plain-item"><span class="plain-tag">喜用方向</span><div class="plain-body">${yongPlain}。${yongDirTxt}${yongReasonTxt ? yongReasonTxt : "多往喜用方位努力，更容易发挥自身优势。"}</div></div>
      </div>`;
 }
 
@@ -765,7 +768,7 @@ function renderResult(result, report, loc) {
     + col(result.hour_tg, result.hour_dz, "时柱");
 
   $("master").innerHTML =
-    `核心日主：<strong>【${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]} · ${ENGINE.YIN_YANG[result.ri_zhu]}】</strong>　喜用神方向：<strong>${report.yong_shen}</strong>`;
+    `核心日主：<strong>【${result.ri_zhu}${ENGINE.WU_XING[result.ri_zhu]} · ${ENGINE.YIN_YANG[result.ri_zhu]}】</strong>　喜用神方向：<strong>${report.yong_shen}${report.yong_direction ? `（${report.yong_direction}）` : ""}</strong>`;
 
   $("status-chip").innerHTML = `<span class="chip status">${report.power_status}</span>`;
 
@@ -859,7 +862,7 @@ function renderResult(result, report, loc) {
      </div>
      <div class="detail-block">
        <div class="k">喜用神方向</div>
-       <div class="v">${report.yong_shen}</div>
+       <div class="v">${report.yong_shen}${report.yong_direction ? `<br><b>喜用方位：${report.yong_direction}</b>` : ""}${report.yong_reason ? `<br><span style="color:var(--muted)">${report.yong_reason}</span>` : ""}</div>
      </div>`;
 
   // 地支藏干十神
