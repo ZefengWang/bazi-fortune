@@ -301,6 +301,10 @@
         <label for="city">城市</label>
         <select id="city"></select>
       </div>
+      <div class="field" id="district-field">
+        <label for="district">县 / 区</label>
+        <select id="district"></select>
+      </div>
       <div class="field" id="custom-tz-field" style="display:none;">
         <label for="custom-tz">IANA 时区</label>
         <input type="text" id="custom-tz" placeholder="如 America/New_York" value="Asia/Shanghai">
@@ -430,6 +434,10 @@
             <label for="hh-a-city">城市</label>
             <select id="hh-a-city"></select>
           </div>
+          <div class="field" id="hh-a-district-field">
+            <label for="hh-a-district">县 / 区</label>
+            <select id="hh-a-district"></select>
+          </div>
           <div class="field" id="hh-a-custom-tz-field" style="display:none;">
             <label for="hh-a-custom-tz">IANA 时区</label>
             <input type="text" id="hh-a-custom-tz" value="Asia/Shanghai">
@@ -479,6 +487,10 @@
             <label for="hh-b-city">城市</label>
             <select id="hh-b-city"></select>
           </div>
+          <div class="field" id="hh-b-district-field">
+            <label for="hh-b-district">县 / 区</label>
+            <select id="hh-b-district"></select>
+          </div>
           <div class="field" id="hh-b-custom-tz-field" style="display:none;">
             <label for="hh-b-custom-tz">IANA 时区</label>
             <input type="text" id="hh-b-custom-tz" value="Asia/Shanghai">
@@ -514,7 +526,7 @@
   </footer>
 </div>
 
-<script src="cities-data.js?v=4"></script>
+<script src="cities-data.js?v=5"></script>
 <script src="engine.js?v=10"></script>
 <script>
 "use strict";
@@ -527,7 +539,7 @@ const ELEM_CLASS = { "木":"mu", "火":"huo", "土":"tu", "金":"jin", "水":"sh
 function showError(msg) { const el = $("error"); el.textContent = msg; el.style.display = "block"; }
 function clearError() { $("error").style.display = "none"; }
 
-/* ---------- 三级联动：国家 → 省 → 城市 ---------- */
+/* ---------- 四级联动：国家 → 省 → 市 → 县/区 ---------- */
 function initLocations() {
   const countrySel = $("country");
   const add = (val, txt) => { const o = document.createElement("option"); o.value = val; o.textContent = txt; countrySel.appendChild(o); };
@@ -558,24 +570,30 @@ function renderCountryCities(countryName) {
 function renderChinaCities() {
   const p = CITY_DB.china.provinces.find(x => x.name === $("province").value);
   fillSelect($("city"), p.cities, (ci) => ci.name);
+  renderChinaDistricts();
+}
+function renderChinaDistricts() {
+  const p = CITY_DB.china.provinces.find(x => x.name === $("province").value);
+  const c = p.cities.find(x => x.name === $("city").value);
+  fillSelect($("district"), (c && c.districts) || [], (d) => d.name);
   onChange();
 }
 
 function onCountryChange() {
   const v = $("country").value;
-  const provField = $("province-field"), cityField = $("city-field");
+  const provField = $("province-field"), cityField = $("city-field"), districtField = $("district-field");
   const tzField = $("custom-tz-field"), lngField = $("custom-lng-field");
 
   if (v === "china") {
-    provField.style.display = "flex"; cityField.style.display = "flex";
+    provField.style.display = "flex"; cityField.style.display = "flex"; districtField.style.display = "flex";
     tzField.style.display = "none"; lngField.style.display = "none";
     renderProvinces();
   } else if (v === "__custom__") {
-    provField.style.display = "none"; cityField.style.display = "none";
+    provField.style.display = "none"; cityField.style.display = "none"; districtField.style.display = "none";
     tzField.style.display = "flex"; lngField.style.display = "flex";
     onChange();
   } else {
-    provField.style.display = "none"; cityField.style.display = "flex";
+    provField.style.display = "none"; cityField.style.display = "flex"; districtField.style.display = "none";
     tzField.style.display = "none"; lngField.style.display = "none";
     renderCountryCities(v);
   }
@@ -594,7 +612,11 @@ function resolveLocation() {
   if (v === "china") {
     const p = CITY_DB.china.provinces.find(x => x.name === $("province").value);
     city = p.cities.find(c => c.name === $("city").value);
-    return { lng: city.lng, tz: "Asia/Shanghai", label: `中国 · ${city.name}`, cityName: city.name };
+    const district = (city && city.districts || []).find(d => d.name === $("district").value) || null;
+    const loc = district || city;
+    const parts = [p.name, city.name];
+    if (district && district.name !== city.name) parts.push(district.name);
+    return { lng: loc.lng, tz: "Asia/Shanghai", label: `中国 · ${parts.join(" · ")}`, cityName: loc.name };
   }
   const c = CITY_DB.global.find(x => x.name === v);
   city = c.cities.find(x => x.name === $("city").value);
@@ -612,7 +634,8 @@ function onChange() {
 
 $("country").addEventListener("change", onCountryChange);
 $("province").addEventListener("change", renderChinaCities);
-$("city").addEventListener("change", onChange);
+$("city").addEventListener("change", renderChinaDistricts);
+$("district").addEventListener("change", onChange);
 $("custom-tz").addEventListener("input", onChange);
 $("custom-lng").addEventListener("input", onChange);
 
@@ -935,7 +958,7 @@ $("submit").addEventListener("click", function () {
 /* ---------- 八字合婚 ---------- */
 const SX = { "子":"鼠","丑":"牛","寅":"虎","卯":"兔","辰":"龙","巳":"蛇","午":"马","未":"羊","申":"猴","酉":"鸡","戌":"狗","亥":"猪" };
 
-/* 合婚区三级联动：国家 → 省 → 城市（参数化复用主区 CITY_DB 逻辑） */
+/* 合婚区四级联动：国家 → 省 → 市 → 县/区（参数化复用主区 CITY_DB 逻辑） */
 function hehunRenderProvinces(prefix) {
   fillSelect($(prefix + "-province"), CITY_DB.china.provinces, (p) => p.name);
   hehunRenderChinaCities(prefix);
@@ -943,6 +966,12 @@ function hehunRenderProvinces(prefix) {
 function hehunRenderChinaCities(prefix) {
   const p = CITY_DB.china.provinces.find(x => x.name === $(prefix + "-province").value);
   fillSelect($(prefix + "-city"), p.cities, (ci) => ci.name);
+  hehunRenderChinaDistricts(prefix);
+}
+function hehunRenderChinaDistricts(prefix) {
+  const p = CITY_DB.china.provinces.find(x => x.name === $(prefix + "-province").value);
+  const c = p.cities.find(x => x.name === $(prefix + "-city").value);
+  fillSelect($(prefix + "-district"), (c && c.districts) || [], (d) => d.name);
 }
 function hehunRenderCountryCities(prefix) {
   const c = CITY_DB.global.find(x => x.name === $(prefix + "-country").value);
@@ -950,17 +979,17 @@ function hehunRenderCountryCities(prefix) {
 }
 function hehunOnCountryChange(prefix) {
   const v = $(prefix + "-country").value;
-  const provField = $(prefix + "-province-field"), cityField = $(prefix + "-city-field");
+  const provField = $(prefix + "-province-field"), cityField = $(prefix + "-city-field"), districtField = $(prefix + "-district-field");
   const tzField = $(prefix + "-custom-tz-field"), lngField = $(prefix + "-custom-lng-field");
   if (v === "china") {
-    provField.style.display = "flex"; cityField.style.display = "flex";
+    provField.style.display = "flex"; cityField.style.display = "flex"; districtField.style.display = "flex";
     tzField.style.display = "none"; lngField.style.display = "none";
     hehunRenderProvinces(prefix);
   } else if (v === "__custom__") {
-    provField.style.display = "none"; cityField.style.display = "none";
+    provField.style.display = "none"; cityField.style.display = "none"; districtField.style.display = "none";
     tzField.style.display = "flex"; lngField.style.display = "flex";
   } else {
-    provField.style.display = "none"; cityField.style.display = "flex";
+    provField.style.display = "none"; cityField.style.display = "flex"; districtField.style.display = "none";
     tzField.style.display = "none"; lngField.style.display = "none";
     hehunRenderCountryCities(prefix);
   }
@@ -985,7 +1014,9 @@ function resolveHehunLocation(prefix) {
   if (v === "china") {
     const p = CITY_DB.china.provinces.find(x => x.name === $(prefix + "-province").value);
     city = p.cities.find(c => c.name === $(prefix + "-city").value);
-    return { lng: city.lng, tz: "Asia/Shanghai" };
+    const district = (city && city.districts || []).find(d => d.name === $(prefix + "-district").value) || null;
+    const loc = district || city;
+    return { lng: loc.lng, tz: "Asia/Shanghai" };
   }
   const c = CITY_DB.global.find(x => x.name === v);
   city = c.cities.find(x => x.name === $(prefix + "-city").value);
@@ -1104,6 +1135,7 @@ initHehunLocation("hh-b");
 ["hh-a", "hh-b"].forEach(prefix => {
   $(prefix + "-country").addEventListener("change", () => hehunOnCountryChange(prefix));
   $(prefix + "-province").addEventListener("change", () => hehunRenderChinaCities(prefix));
+  $(prefix + "-city").addEventListener("change", () => hehunRenderChinaDistricts(prefix));
 });
 
 /* ---------- 事业合盘 · 合伙搭档 ---------- */
@@ -1150,6 +1182,10 @@ function partnerSideHTML(prefix, title, defaultGender, def) {
       <div class="field" id="${prefix}-city-field">
         <label for="${prefix}-city">城市</label>
         <select id="${prefix}-city"></select>
+      </div>
+      <div class="field" id="${prefix}-district-field">
+        <label for="${prefix}-district">县 / 区</label>
+        <select id="${prefix}-district"></select>
       </div>
       <div class="field" id="${prefix}-custom-tz-field" style="display:none;">
         <label for="${prefix}-custom-tz">IANA 时区</label>
@@ -1242,6 +1278,7 @@ initHehunLocation("hz-b");
 ["hz-a", "hz-b"].forEach(prefix => {
   $(prefix + "-country").addEventListener("change", () => hehunOnCountryChange(prefix));
   $(prefix + "-province").addEventListener("change", () => hehunRenderChinaCities(prefix));
+  $(prefix + "-city").addEventListener("change", () => hehunRenderChinaDistricts(prefix));
 });
 
 $("btn-hezuo").addEventListener("click", function () {
